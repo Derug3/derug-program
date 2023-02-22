@@ -629,7 +629,8 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "mpl-candy-guard",
+ "itertools",
+ "mpl-candy-machine",
  "mpl-token-metadata",
  "solana-program",
 ]
@@ -1040,41 +1041,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "mpl-candy-guard"
-version = "0.3.0"
+name = "mpl-candy-machine"
+version = "4.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74716390c0cf2d13c97080706e4c281aba5083db523655a38dd56a2db2b085d8"
+checksum = "c3f22152976a1f4501937654be8884da3eee4b628a00ba2e3bd758f36122bb52"
 dependencies = [
  "anchor-lang",
+ "anchor-spl",
  "arrayref",
- "mpl-candy-guard-derive",
- "mpl-candy-machine-core",
  "mpl-token-metadata",
  "solana-gateway",
- "solana-program",
- "spl-associated-token-account",
- "spl-token",
-]
-
-[[package]]
-name = "mpl-candy-guard-derive"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18e4d3002ea881e94a238798faf87a006a687297a24bd4b3f810fbb63611173d"
-dependencies = [
- "quote",
- "syn",
-]
-
-[[package]]
-name = "mpl-candy-machine-core"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "979975275820465e1ae68742c2ca86af143d07097a0b174ed6f7687be697d8f3"
-dependencies = [
- "anchor-lang",
- "arrayref",
- "mpl-token-metadata",
  "solana-program",
  "spl-associated-token-account",
  "spl-token",

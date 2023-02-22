@@ -19,5 +19,6 @@ default = []
 anchor-lang = "0.26.0"
 anchor-spl = "0.26.0"
 solana-program = "1.14.16"
-mpl-candy-guard = "0.3.0"
+itertools = "0.10.5"
+mpl-candy-machine = "4.6.0"
 mpl-token-metadata = "1.8.4"
