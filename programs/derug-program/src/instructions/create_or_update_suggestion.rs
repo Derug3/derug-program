@@ -20,8 +20,8 @@ pub struct CreateOrUpdateSuggestion<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn create_or_update_suggestion<'info>(
-    ctx: Context<CreateOrUpdateSuggestion<'info>>,
+pub fn create_or_update_suggestion(
+    ctx: Context<CreateOrUpdateSuggestion>,
     utility_dtos: Vec<UpdateUtilityDataDto>,
 ) -> Result<()> {
     let suggestion_data = &mut ctx.accounts.suggestion_data;

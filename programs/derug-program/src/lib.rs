@@ -15,8 +15,8 @@ pub mod derug_program {
     pub fn initialize_derug(ctx: Context<InitializeDerug>, total_supply: u32) -> Result<()> {
         instructions::initialize_derug(ctx, total_supply)
     }
-    pub fn create_or_update_suggestion<'info>(
-        ctx: Context<CreateOrUpdateSuggestion<'info>>,
+    pub fn create_or_update_suggestion(
+        ctx: Context<CreateOrUpdateSuggestion>,
         utility_dtos: Vec<UpdateUtilityDataDto>,
     ) -> Result<()> {
         instructions::create_or_update_suggestion(ctx, utility_dtos)
