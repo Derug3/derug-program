@@ -14,6 +14,7 @@ pub struct InitializeDerug<'info> {
     #[account(init,payer=payer,seeds=[DERUG_DATA_SEED,collection_key.key().as_ref()],bump,space=DerugData::LEN)]
     pub derug_data: Box<Account<'info, DerugData>>,
     #[account(seeds=[METADATA_SEED,collection_key.key().as_ref(),METADATA_PROGRAM.as_ref()],bump,seeds::program=METADATA_PROGRAM)]
+    ///CHECK
     pub collection_metadata: UncheckedAccount<'info>,
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -45,6 +46,7 @@ pub fn initialize_derug(ctx: Context<InitializeDerug>, total_supply: u32) -> Res
     derug_data.collection_symbol = collection_metadata.data.symbol;
     derug_data.derug_status = DerugStatus::Initialized;
     derug_data.total_supply = total_supply;
+    derug_data.total_suggestion_count = 0;
 
     Ok(())
 }

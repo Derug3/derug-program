@@ -9,6 +9,7 @@ pub struct DerugData {
     pub candy_machine: Option<Pubkey>,
     pub date_added: i64,
     pub derug_status: DerugStatus,
+    pub total_suggestion_count: u8,
     pub collection_name: String,
     pub collection_symbol: String,
     pub collection_uri: String,
@@ -23,6 +24,7 @@ impl DerugData {
     + MAX_NAME_LENGTH 
     + MAX_SYMBOL_LENGTH 
     + MAX_URI_LENGTH; 
+
 }
 
 #[derive(AnchorDeserialize, AnchorSerialize, Clone)]

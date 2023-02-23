@@ -1,5 +1,5 @@
 pub use initialize_derug::*;
 pub mod initialize_derug;
 
-pub mod derug_requset;
-pub use derug_requset::*;
+pub mod create_or_update_suggestion;
+pub use create_or_update_suggestion::*;
