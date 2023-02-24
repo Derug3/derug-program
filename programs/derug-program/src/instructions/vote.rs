@@ -63,6 +63,8 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> 
             DerugError::WrongOwner
         );
 
+        require!(vote_record_info.data_is_empty(), DerugError::AlereadyVoted);
+
         let vote_record = VoteRecord { voted: true }.try_to_vec().unwrap();
 
         create_account(

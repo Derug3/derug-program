@@ -19,4 +19,7 @@ pub enum DerugError {
 
     #[msg("Payer doesn't own the token account")]
     WrongOwner,
+
+    #[msg("User alredy voted with given nft")]
+    AlereadyVoted,
 }
