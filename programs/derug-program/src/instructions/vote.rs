@@ -1,4 +1,4 @@
-use crate::{constants::VOTE_RECORD_SEED, errors::DerugError};
+use crate::{constants::VOTE_RECORD_SEED, errors::DerugError, state::derug_request::RequestStatus};
 use anchor_lang::{
     prelude::*,
     system_program::{create_account, CreateAccount},
@@ -28,6 +28,8 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> 
     let remaining_accounts = ctx.remaining_accounts;
 
     let derug_request = &mut ctx.accounts.derug_request;
+
+    derug_request.request_status = RequestStatus::Voting;
 
     for (vote_record_info, nft_mint_info, nft_metadata_info, nft_token_account_info) in
         remaining_accounts.iter().tuples()
@@ -82,6 +84,8 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> 
             vote_record.len() as u64,
             ctx.program_id,
         )?;
+
+        derug_request.vote_count = derug_request.vote_count.checked_add(1).unwrap();
 
         vote_record_info
             .data
