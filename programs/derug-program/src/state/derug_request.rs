@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
-
 #[account]
 pub struct DerugRequest {
+    pub derug_data: Pubkey,
     pub derugger: Pubkey,
     pub created_at: i64,
     pub vote_count: u32,

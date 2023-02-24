@@ -31,7 +31,6 @@ impl DerugData {
 pub enum DerugStatus {
     Initialized,
     Voting,
-    Auction,
-    Pending,
+    Reminting,
     Completed,
 }
