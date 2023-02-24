@@ -31,7 +31,7 @@ pub trait AccountLen {
     fn current_data_len(&self) -> usize;
 }
 
-impl AccountLen for Account<'static, DerugRequest> {
+impl AccountLen for Account<'_, DerugRequest> {
     fn length(&self) -> usize {
         self.try_to_vec().unwrap().len()
     }

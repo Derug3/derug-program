@@ -1,5 +1,6 @@
 use crate::errors::DerugError;
 use crate::state::{Action, RequestStatus, UtilityData};
+use crate::utilities::calculate_new_suggestion_data_len;
 use crate::{
     constants::DERUG_DATA_SEED,
     state::{DerugData, DerugRequest, UpdateUtilityDataDto},
@@ -44,10 +45,7 @@ pub fn create_or_update_suggestion(
             .collect();
         suggestion_data.request_status = RequestStatus::Voting;
     } else {
-        //TODO
-        // let new_data_len =
-        //     calculate_new_suggestion_data_len(&utility_dtos, &suggestion_data.clone());
-        let new_data_len: usize = 50;
+        let new_data_len = calculate_new_suggestion_data_len(&utility_dtos, suggestion_data);
         if new_data_len > suggestion_data.to_account_info().data_len() {
             transfer(
                 CpiContext::new(
