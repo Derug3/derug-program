@@ -1,4 +1,4 @@
-use crate::{errors::DerugError, state::vote_record};
+use crate::{constants::VOTE_RECORD_SEED, errors::DerugError};
 use anchor_lang::{
     prelude::*,
     system_program::{create_account, CreateAccount},
@@ -24,7 +24,7 @@ pub struct Vote<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<Vote<'info>>) -> Result<()> {
+pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> Result<()> {
     let remaining_accounts = ctx.remaining_accounts;
 
     let derug_request = &mut ctx.accounts.derug_request;
@@ -63,18 +63,25 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<Vote<'info>>) -> Result<()> {
 
         let vote_record = VoteRecord { voted: true }.try_to_vec().unwrap();
 
-        let create_account_ix = create_account(
-            CpiContext::new(
+        create_account(
+            CpiContext::new_with_signer(
+                ctx.accounts.system_program.to_account_info(),
                 CreateAccount {
                     from: ctx.accounts.payer.to_account_info(),
-                    to: vote_record_info.to_account_info(),
+                    to: vote_record_info.clone(),
                 },
-                &[ctx.accounts.payer.to_account_info(), *vote_record_info],
+                &[&[
+                    DERUG_DATA_SEED,
+                    ctx.accounts.payer.key.as_ref(),
+                    nft_mint.key().as_ref(),
+                    VOTE_RECORD_SEED,
+                    &[vote_record_bump],
+                ]],
             ),
             Rent::default().minimum_balance(vote_record.len()),
             vote_record.len() as u64,
             ctx.program_id,
-        );
+        )?;
 
         vote_record_info
             .data
