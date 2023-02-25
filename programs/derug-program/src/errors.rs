@@ -31,4 +31,7 @@ pub enum DerugError {
 
     #[msg("You cannot make requests anymore")]
     TimeIsOut,
+
+    #[msg("There is no winner yet")]
+    NoWinner,
 }

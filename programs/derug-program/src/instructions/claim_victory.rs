@@ -5,7 +5,7 @@ use crate::{
     constants::DERUG_DATA_SEED,
     errors::DerugError,
     state::{
-        derug_data::DerugData,
+        derug_data::{DerugData, DerugStatus},
         derug_request::{DerugRequest, RequestStatus},
     },
 };
@@ -56,6 +56,8 @@ pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
     if multiple_winners.len() > 0 {
         panic!("There are multiple winners");
     }
+
+    derug_data.derug_status = DerugStatus::Reminting;
 
     Ok(())
 }

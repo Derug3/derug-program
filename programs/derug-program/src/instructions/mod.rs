@@ -12,3 +12,6 @@ pub use cancel_derug_request::*;
 
 pub mod claim_victory;
 pub use claim_victory::*;
+
+pub mod init_candy_machine;
+pub use init_candy_machine::*;
