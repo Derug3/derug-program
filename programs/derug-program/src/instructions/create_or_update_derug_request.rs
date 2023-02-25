@@ -1,4 +1,5 @@
 use crate::errors::DerugError;
+use crate::state::derug_data::ActiveRequest;
 use crate::state::{Action, RequestStatus, UtilityData};
 use crate::utilities::calculate_new_suggestion_data_len;
 use crate::{
@@ -26,10 +27,11 @@ pub fn create_or_update_derug_request(
     utility_dtos: Vec<UpdateUtilityDataDto>,
 ) -> Result<()> {
     let derug_request = &mut ctx.accounts.derug_request;
+    let derug_data = &mut ctx.accounts.derug_data;
 
     derug_request.created_at = Clock::get().unwrap().unix_timestamp;
     require!(
-        ctx.accounts.payer.key() != ctx.accounts.derug_data.rug_update_authority,
+        ctx.accounts.payer.key() != derug_data.rug_update_authority,
         DerugError::RuggerSigner
     );
 
@@ -44,6 +46,26 @@ pub fn create_or_update_derug_request(
             })
             .collect();
         derug_request.request_status = RequestStatus::Voting;
+
+        transfer(
+            CpiContext::new(
+                ctx.accounts.system_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.payer.to_account_info(),
+                    to: derug_data.to_account_info(),
+                },
+            ),
+            Rent::default().minimum_balance(36),
+        )?;
+
+        derug_data
+            .to_account_info()
+            .realloc(derug_data.to_account_info().data_len() + 36, false)?;
+
+        derug_data.active_requests.push(ActiveRequest {
+            request: derug_request.key(),
+            vote_count: 0,
+        });
     } else {
         ctx.accounts.derug_data.total_suggestion_count = ctx
             .accounts

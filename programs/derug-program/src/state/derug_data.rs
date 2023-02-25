@@ -13,6 +13,7 @@ pub struct DerugData {
     pub collection_name: String,
     pub collection_symbol: String,
     pub collection_uri: String,
+    pub active_requests: Vec<ActiveRequest>
 }
 
 impl DerugData {
@@ -33,4 +34,12 @@ pub enum DerugStatus {
     Voting,
     Reminting,
     Completed,
+}
+
+#[derive(AnchorDeserialize, AnchorSerialize, Clone)]
+
+pub struct ActiveRequest {
+    pub request: Pubkey,
+    pub vote_count: u32
+
 }
