@@ -22,4 +22,7 @@ pub enum DerugError {
 
     #[msg("User alredy voted with given nft")]
     AlereadyVoted,
+
+    #[msg("Signer isn't the required derugger")]
+    WrongDerugger,
 }

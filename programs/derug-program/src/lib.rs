@@ -21,4 +21,12 @@ pub mod derug_program {
     ) -> Result<()> {
         instructions::create_or_update_derug_request(ctx, utility_dtos)
     }
+
+    pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> Result<()> {
+        instructions::vote(ctx)
+    }
+
+    pub fn cancel_derug_request(ctx: Context<CancelDerugRequest>) -> Result<()> {
+        instructions::cancel_derug_request(ctx)
+    }
 }
