@@ -23,7 +23,6 @@ pub enum RequestStatus {
     Voting,
     Succeeded,
     Finished,
-    Cancelled,
 }
 
 pub trait AccountLen {

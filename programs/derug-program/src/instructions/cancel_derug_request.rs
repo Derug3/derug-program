@@ -25,6 +25,12 @@ pub fn cancel_derug_request(ctx: Context<CancelDerugRequest>) -> Result<()> {
 
     let derug_data = &mut ctx.accounts.derug_data;
     derug_data.total_suggestion_count = derug_data.total_suggestion_count.checked_sub(1).unwrap();
+    derug_data
+        .active_requests
+        .iter_mut()
+        .find(|request| request.request == ctx.accounts.derug_request.key())
+        .unwrap()
+        .vote_count = -1;
 
     ctx.accounts
         .derug_request

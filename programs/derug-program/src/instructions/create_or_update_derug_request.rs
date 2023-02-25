@@ -1,3 +1,4 @@
+use crate::constants::VOTING_TIME;
 use crate::errors::DerugError;
 use crate::state::derug_data::ActiveRequest;
 use crate::state::{Action, RequestStatus, UtilityData};
@@ -35,6 +36,15 @@ pub fn create_or_update_derug_request(
         DerugError::RuggerSigner
     );
 
+    require!(
+        derug_data
+            .voting_started_at
+            .checked_add(VOTING_TIME)
+            .unwrap()
+            > derug_request.created_at,
+        DerugError::TimeIsOut
+    );
+
     derug_request.derugger = ctx.accounts.payer.key();
 
     if derug_request.request_status == RequestStatus::Initialized {
@@ -57,6 +67,10 @@ pub fn create_or_update_derug_request(
             ),
             Rent::default().minimum_balance(36),
         )?;
+
+        if derug_data.active_requests.len() == 0 {
+            derug_data.voting_started_at = Clock::get().unwrap().unix_timestamp;
+        }
 
         derug_data
             .to_account_info()

@@ -9,3 +9,6 @@ pub use vote::*;
 
 pub mod cancel_derug_request;
 pub use cancel_derug_request::*;
+
+pub mod claim_victory;
+pub use claim_victory::*;

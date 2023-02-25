@@ -25,4 +25,10 @@ pub enum DerugError {
 
     #[msg("Signer isn't the required derugger")]
     WrongDerugger,
+
+    #[msg("Request isn't the winning one")]
+    InvalidWinningRequest,
+
+    #[msg("You cannot make requests anymore")]
+    TimeIsOut,
 }
