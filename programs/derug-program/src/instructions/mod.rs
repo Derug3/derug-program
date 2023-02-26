@@ -15,3 +15,6 @@ pub use claim_victory::*;
 
 pub mod initialize_reminting;
 pub use initialize_reminting::*;
+
+pub mod remint_nft;
+pub use remint_nft::*;

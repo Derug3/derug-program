@@ -16,6 +16,7 @@ pub struct DerugData {
     pub collection_symbol: String,
     pub collection_uri: String,
     pub voting_started_at: i64,
+    pub total_reminted: u32,
     pub winning_request: Option<Pubkey>,
     pub active_requests: Vec<ActiveRequest>
 }

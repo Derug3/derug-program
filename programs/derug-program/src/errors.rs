@@ -37,4 +37,10 @@ pub enum DerugError {
 
     #[msg("This is not a new candy machine")]
     CandyMachineUsed,
+
+    #[msg("Derug isn't in the required state")]
+    InvalidStatus,
+
+    #[msg("Wrong collection sent ")]
+    WrongCollection,
 }

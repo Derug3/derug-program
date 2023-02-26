@@ -22,7 +22,8 @@ pub enum RequestStatus {
     Initialized,
     Voting,
     Succeeded,
-    Finished,
+    Reminting,
+    Completed,
 }
 
 pub trait AccountLen {

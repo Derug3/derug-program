@@ -37,6 +37,7 @@ pub fn initialize_derug(ctx: Context<InitializeDerug>, total_supply: u32) -> Res
     derug_data.derug_status = DerugStatus::Initialized;
     derug_data.total_supply = total_supply;
     derug_data.total_suggestion_count = 0;
+    derug_data.total_reminted = 0;
 
     Ok(())
 }

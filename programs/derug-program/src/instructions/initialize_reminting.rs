@@ -123,5 +123,8 @@ pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
         ],
     )?;
 
+    ctx.accounts.derug_request.request_status = RequestStatus::Reminting;
+    ctx.accounts.derug_data.derug_status = DerugStatus::Reminting;
+
     Ok(())
 }
