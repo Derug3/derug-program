@@ -34,4 +34,7 @@ pub enum DerugError {
 
     #[msg("There is no winner yet")]
     NoWinner,
+
+    #[msg("This is not a new candy machine")]
+    CandyMachineUsed,
 }

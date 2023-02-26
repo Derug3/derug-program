@@ -57,7 +57,7 @@ pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
         panic!("There are multiple winners");
     }
 
-    derug_data.derug_status = DerugStatus::Reminting;
+    derug_data.derug_status = DerugStatus::Succeeded;
 
     Ok(())
 }

@@ -5,10 +5,10 @@ use mpl_token_metadata::state::{MAX_NAME_LENGTH, MAX_SYMBOL_LENGTH, MAX_URI_LENG
 #[account]
 pub struct DerugData {
     pub collection: Pubkey,
+    pub new_collection: Option<Pubkey>,
     pub rug_update_authority: Pubkey,
     pub collection_metadata: Pubkey,
     pub total_supply: u32,
-    pub candy_machine: Option<Pubkey>,
     pub date_added: i64,
     pub derug_status: DerugStatus,
     pub total_suggestion_count: u8,
@@ -36,6 +36,7 @@ impl DerugData {
 pub enum DerugStatus {
     Initialized,
     Voting,
+    Succeeded,
     Reminting,
     Completed,
 }
