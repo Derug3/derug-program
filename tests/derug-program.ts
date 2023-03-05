@@ -237,10 +237,10 @@ describe("derug-program", () => {
 
     try {
 
-      await anchor.getProvider().connection.sendTransaction(tx, [derugger, newCollectionMint, newCollectionTokenAccount]);
+      const txSig = await anchor.getProvider().connection.sendTransaction(tx, [derugger, newCollectionMint, newCollectionTokenAccount]);
+      await anchor.getProvider().connection.confirmTransaction(txSig);
 
       const mint = await anchor.getProvider().connection.getAccountInfo(newCollectionMint.publicKey);
-      console.log(mint, "MINT");
 
     } catch (error) {
       console.log(error);
@@ -263,31 +263,31 @@ describe("derug-program", () => {
     );
 
     try {
-      // const ix = await program.methods.initializeReminting()
-      //   .accounts(
-      //     {
-      //       derugData,
-      //       derugRequest,
-      //       newCollection: newCollectionMint.publicKey,
-      //       metadataAccount: newCollectionMetaplexMetadata,
-      //       tokenAccount: newCollectionTokenAccount.publicKey,
-      //       masterEdition: newCollectionEdition,
-      //       payer: derugger.publicKey,
-      //       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-      //       metadataProgram: metaplexProgram,
-      //       tokenProgram: TOKEN_PROGRAM_ID,
-      //       systemProgram: anchor.web3.SystemProgram.programId,
-      //     }
-      //   )
-      //   .signers([derugger])
-      //   .instruction();
+      const ix = await program.methods.initializeReminting()
+        .accounts(
+          {
+            derugData,
+            derugRequest,
+            newCollection: newCollectionMint.publicKey,
+            metadataAccount: newCollectionMetaplexMetadata,
+            tokenAccount: newCollectionTokenAccount.publicKey,
+            masterEdition: newCollectionEdition,
+            payer: derugger.publicKey,
+            rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+            metadataProgram: metaplexProgram,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            systemProgram: anchor.web3.SystemProgram.programId,
+          }
+        )
+        .signers([derugger])
+        .instruction();
 
 
 
-      // const tx = new anchor.web3.Transaction({ feePayer: derugger.publicKey, recentBlockhash: (await anchor.getProvider().connection.getLatestBlockhash()).blockhash });
-      // tx.add(ix);
+      const tx = new anchor.web3.Transaction({ feePayer: derugger.publicKey, recentBlockhash: (await anchor.getProvider().connection.getLatestBlockhash()).blockhash });
+      tx.add(ix);
 
-      // await anchor.getProvider().connection.sendTransaction(tx, [derugger]);
+      await anchor.getProvider().connection.sendTransaction(tx, [derugger]);
 
     } catch (error) {
       console.log(error);
