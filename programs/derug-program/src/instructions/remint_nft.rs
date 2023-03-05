@@ -17,7 +17,7 @@ use mpl_token_metadata::{
 use solana_program::{borsh::try_from_slice_unchecked, program::invoke};
 
 #[derive(Accounts)]
-pub struct InitializeReminting<'info> {
+pub struct RemintNft<'info> {
     #[account(seeds=[DERUG_DATA_SEED, derug_data.key().as_ref(), payer.key().as_ref()], bump)]
     pub derug_request: Box<Account<'info, DerugRequest>>,
     #[account(mut,seeds=[DERUG_DATA_SEED,derug_data.collection.key().as_ref()],bump)]
@@ -63,7 +63,7 @@ pub struct InitializeReminting<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
+pub fn remint_nft(ctx: Context<RemintNft>) -> Result<()> {
     require!(
         ctx.accounts.old_collection.key() == ctx.accounts.derug_data.collection,
         DerugError::WrongCollection

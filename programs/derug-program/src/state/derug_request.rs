@@ -9,12 +9,13 @@ pub struct DerugRequest {
     pub utility_data: Vec<UtilityData>,
 }
 
-pub const FIXED_LEN: usize = 32 + 8 + 4 + 1;
+pub const FIXED_LEN: usize = 32 + 32 + 8 + 4 + 1 + 12;
 
 #[derive(AnchorDeserialize, AnchorSerialize, Clone)]
 pub struct UtilityData {
     pub title: String,
     pub description: String,
+    pub is_active: bool,
 }
 
 #[derive(AnchorDeserialize, AnchorSerialize, Clone, PartialEq)]

@@ -3,12 +3,13 @@ use std::vec;
 use crate::state::{AccountLen, Action, UpdateUtilityDataDto, FIXED_LEN};
 use anchor_lang::prelude::*;
 
+use anchor_spl::token::Mint;
 use mpl_token_metadata::{
     instruction::{create_master_edition_v3, create_metadata_accounts_v3},
     pda::{find_edition_account, find_metadata_account},
     state::{Collection, CollectionDetails, Creator},
 };
-use solana_program::instruction::Instruction;
+use solana_program::{instruction::Instruction, program_pack::Pack, system_instruction};
 
 use mpl_token_metadata::ID as METADATA_PROGRAM_ID;
 
@@ -39,9 +40,13 @@ where
     current_len + add_data_len - remove_data_len
 }
 
-pub fn current_data_len(account_info: &AccountInfo) -> usize {
+pub fn current_data_len(
+    account_info: &AccountInfo,
+    derug_request_dtos: Vec<UpdateUtilityDataDto>,
+) -> usize {
+    let new_dtos_size = derug_request_dtos.try_to_vec().unwrap().len();
     if account_info.data_is_empty() {
-        FIXED_LEN
+        FIXED_LEN.checked_add(new_dtos_size).unwrap()
     } else {
         account_info.data_len().checked_sub(FIXED_LEN).unwrap()
     }
@@ -113,4 +118,49 @@ pub fn create_master_edition_ix(
         payer.clone(),
         Some(0),
     )
+}
+
+pub fn create_nft_mint(account: &AccountInfo, payer: &AccountInfo) -> Instruction {
+    // let create_account_ix = system_instruction::create_account(
+    //     payer.key,
+    //     account.key,
+    //     Rent::default().minimum_balance(Mint::LEN),
+    //     Mint::LEN as u64,
+    //     &anchor_spl::token::ID,
+    // );
+
+    let initialize_mint_ix = spl_token::instruction::initialize_mint(
+        &spl_token::ID,
+        account.key,
+        payer.key,
+        Some(payer.key),
+        0,
+    )
+    .unwrap();
+
+    initialize_mint_ix
+}
+
+pub fn create_token_account_ix(
+    account: &AccountInfo,
+    payer: &AccountInfo,
+    mint: &AccountInfo,
+) -> Instruction {
+    // let create_account_ix = system_instruction::create_account(
+    //     payer.key,
+    //     account.key,
+    //     Rent::default().minimum_balance(spl_token::state::Account::LEN),
+    //     spl_token::state::Account::LEN as u64,
+    //     &anchor_spl::token::ID,
+    // );
+
+    let initialize_account = spl_token::instruction::initialize_account(
+        &spl_token::id(),
+        account.key,
+        &mint.key(),
+        payer.key,
+    )
+    .unwrap();
+
+    initialize_account
 }

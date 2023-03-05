@@ -8,7 +8,10 @@ use crate::{
     utilities::{create_master_edition_ix, create_metadata_ix},
 };
 use anchor_lang::prelude::*;
-use anchor_spl::token::{mint_to, Mint, MintTo, Token, TokenAccount};
+use anchor_spl::token::{
+    initialize_account, initialize_mint, mint_to, InitializeAccount, InitializeMint, Mint, MintTo,
+    Token,
+};
 
 use mpl_token_metadata::{
     processor::verify_collection,
@@ -23,11 +26,12 @@ pub struct InitializeReminting<'info> {
     pub derug_request: Account<'info, DerugRequest>,
     #[account(mut,seeds=[DERUG_DATA_SEED,derug_data.collection.key().as_ref()],bump)]
     pub derug_data: Box<Account<'info, DerugData>>,
-    #[account(init, payer=payer, mint::decimals=0, mint::authority=payer, mint::freeze_authority=payer)]
-    pub new_collection: Account<'info, Mint>,
-    #[account(init, payer=payer, token::mint=new_collection, token::authority=payer)]
-    pub token_account: Account<'info, TokenAccount>,
-
+    #[account(mut)]
+    ///CHECK
+    pub new_collection: UncheckedAccount<'info>,
+    ///CHECK
+    #[account(mut)]
+    pub token_account: UncheckedAccount<'info>,
     ///CHECK
     #[account(seeds=[PREFIX.as_ref(), METADATA_PROGRAM_ID.as_ref(), new_collection.key().as_ref(), EDITION.as_ref()],bump, seeds::program = METADATA_PROGRAM_ID)]
     pub master_edition: UncheckedAccount<'info>,
@@ -47,6 +51,7 @@ pub struct InitializeReminting<'info> {
 }
 
 pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
+    msg!("{:?}", ctx.accounts.new_collection);
     require!(
         ctx.accounts.derug_data.derug_status == DerugStatus::Succeeded,
         DerugError::NoWinner
@@ -56,6 +61,29 @@ pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
         ctx.accounts.derug_request.request_status == RequestStatus::Succeeded,
         DerugError::NoWinner
     );
+
+    initialize_mint(
+        CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            InitializeMint {
+                mint: ctx.accounts.new_collection.to_account_info(),
+                rent: ctx.accounts.rent.to_account_info(),
+            },
+        ),
+        0,
+        ctx.accounts.payer.key,
+        Some(ctx.accounts.payer.key),
+    )?;
+
+    initialize_account(CpiContext::new(
+        ctx.accounts.token_account.to_account_info(),
+        InitializeAccount {
+            account: ctx.accounts.token_account.to_account_info(),
+            authority: ctx.accounts.payer.to_account_info(),
+            mint: ctx.accounts.new_collection.to_account_info(),
+            rent: ctx.accounts.rent.to_account_info(),
+        },
+    ))?;
 
     mint_to(
         CpiContext::new(

@@ -3,37 +3,43 @@ use std::cmp::Ordering;
 use anchor_lang::prelude::*;
 use mpl_token_metadata::state::{MAX_NAME_LENGTH, MAX_SYMBOL_LENGTH, MAX_URI_LENGTH};
 #[account]
+#[derive(Debug)]
 pub struct DerugData {
     pub collection: Pubkey,
-    pub new_collection: Option<Pubkey>,
     pub rug_update_authority: Pubkey,
     pub collection_metadata: Pubkey,
     pub total_supply: u32,
+    pub new_collection: Option<Pubkey>,
     pub date_added: i64,
     pub derug_status: DerugStatus,
+    pub voting_started_at: i64,
+    pub total_reminted: u32,
+    pub winning_request: Option<Pubkey>,
     pub total_suggestion_count: u8,
     pub collection_name: String,
     pub collection_symbol: String,
     pub collection_uri: String,
-    pub voting_started_at: i64,
-    pub total_reminted: u32,
-    pub winning_request: Option<Pubkey>,
     pub active_requests: Vec<ActiveRequest>
 }
 
 impl DerugData {
-    pub const LEN: usize = 3 * 32  //First three pubkeys
+    pub const LEN: usize = 
+      3 * 32  //First three pubkeys
     + 4 //total amount of nfts in rugged collection 
-    + 33 //candy machine key(if collection is minted via candy machine) 
+    + 33 //new_collection 
     + 8 //timestamp of derug account creation 
     + 1 //status 
+    + 8 //timestamp of voting started  
+    + 4 //total reminted
+    + 33 //winning request
+    + 1 //suggestion count
     + MAX_NAME_LENGTH 
     + MAX_SYMBOL_LENGTH 
-    + MAX_URI_LENGTH; 
-
+    + MAX_URI_LENGTH
+    + 4; // vec<activerequest>
 }
 
-#[derive(AnchorDeserialize, AnchorSerialize, Clone, PartialEq)]
+#[derive(AnchorDeserialize, AnchorSerialize, Clone, PartialEq,Debug)]
 pub enum DerugStatus {
     Initialized,
     Voting,
@@ -42,7 +48,7 @@ pub enum DerugStatus {
     Completed,
 }
 
-#[derive(AnchorDeserialize, AnchorSerialize, Clone, PartialEq, PartialOrd)]
+#[derive(AnchorDeserialize, AnchorSerialize, Clone, PartialEq, PartialOrd,Debug)]
 
 pub struct ActiveRequest {
     pub request: Pubkey,

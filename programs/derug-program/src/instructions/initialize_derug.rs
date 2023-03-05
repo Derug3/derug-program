@@ -10,9 +10,9 @@ use solana_program::borsh::try_from_slice_unchecked;
 pub struct InitializeDerug<'info> {
     #[account()]
     pub collection_key: Box<Account<'info, Mint>>,
-    #[account(init,payer=payer,seeds=[DERUG_DATA_SEED,collection_key.key().as_ref()],bump,space=DerugData::LEN)]
+    #[account(init,payer=payer,seeds=[DERUG_DATA_SEED,collection_key.key().as_ref()], bump, space=DerugData::LEN)]
     pub derug_data: Box<Account<'info, DerugData>>,
-    #[account(seeds=[METADATA_SEED,collection_key.key().as_ref(),METADATA_PROGRAM.as_ref()],bump,seeds::program=METADATA_PROGRAM)]
+    #[account(seeds=[METADATA_SEED,METADATA_PROGRAM.as_ref(),collection_key.key().as_ref(),],bump,seeds::program=METADATA_PROGRAM)]
     ///CHECK
     pub collection_metadata: UncheckedAccount<'info>,
     #[account(mut)]

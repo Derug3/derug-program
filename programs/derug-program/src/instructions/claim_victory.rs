@@ -28,6 +28,8 @@ pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
         ctx.accounts.payer.key() == derug_request.derugger.key(),
         DerugError::WrongDerugger
     );
+    msg!("{:?}", derug_data.voting_started_at);
+    msg!("{:?}", Clock::get().unwrap().unix_timestamp);
     require!(
         derug_data
             .voting_started_at
@@ -59,7 +61,7 @@ pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
         .filter(|request| request.vote_count == winner.vote_count)
         .collect_vec();
 
-    if multiple_winners.len() > 0 {
+    if multiple_winners.len() > 1 {
         panic!("There are multiple winners");
     }
 

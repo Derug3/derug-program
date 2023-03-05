@@ -1,4 +1,4 @@
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, AccountsClose};
 
 use crate::{
     constants::DERUG_DATA_SEED,

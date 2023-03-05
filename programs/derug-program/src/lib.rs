@@ -15,7 +15,8 @@ pub mod derug_program {
     pub fn initialize_derug(ctx: Context<InitializeDerug>, total_supply: u32) -> Result<()> {
         instructions::initialize_derug(ctx, total_supply)
     }
-    pub fn create_or_update_suggestion(
+
+    pub fn create_or_update_derug_request(
         ctx: Context<CreateOrUpdateDerugRequest>,
         utility_dtos: Vec<UpdateUtilityDataDto>,
     ) -> Result<()> {
@@ -28,5 +29,13 @@ pub mod derug_program {
 
     pub fn cancel_derug_request(ctx: Context<CancelDerugRequest>) -> Result<()> {
         instructions::cancel_derug_request(ctx)
+    }
+
+    pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
+        instructions::claim_victory(ctx)
+    }
+
+    pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
+        instructions::initialize_reminting(ctx)
     }
 }

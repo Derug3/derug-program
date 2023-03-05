@@ -9,7 +9,29 @@ url = "https://api.apr.dev"
 
 [provider]
 cluster = "Localnet"
-wallet = "/Users/gorangutovic/.config/solana/id.json"
+wallet= "/Users/zazza/Coding/other/derug-program/wallet/keypair.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+
+[test.validator]
+url="https://api.devnet.solana.com"
+
+#NFT MINT
+[[test.validator.clone]]
+address = '4wHV9DgTrPh7nNU6LquYHYsT2u6iDBrMN47Cfrjh5e6R'
+#NFT Metadata
+[[test.validator.clone]]
+address = '5K6QaPebCrZfZWfx7983P1YJN6LAkFGRDCYyY7MMKBNd'
+#NFT Token Account
+[[test.validator.clone]]
+address = '8CAjrv9CvvpfVCP4b8BQe14Wg3AuKQSC1sT3RsYpjNYr'
+#Collection
+[[test.validator.clone]]
+address = '5igf61dzqeaNCq3DjygoNr84QUd4KGNQMQ6A5vdHGYTM'
+#Collection metadata
+[[test.validator.clone]]
+address = '3aLReb2KX22Q9Nf6rPVatjzdUv4v74fwFJoyFQZ9Crcd'
+#Update authority
+# [[test.validator.clone]]
+# address = 'KQ1jcFYvnH9DNUzBfVbquRohP9uZ6C7DVJJDyqiGB4P'

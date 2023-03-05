@@ -2,6 +2,7 @@ use crate::{constants::VOTE_RECORD_SEED, errors::DerugError, state::derug_reques
 use anchor_lang::{
     prelude::*,
     system_program::{create_account, CreateAccount},
+    Discriminator,
 };
 use anchor_spl::token::{Mint, TokenAccount};
 use itertools::Itertools;
@@ -15,7 +16,7 @@ use crate::{
 
 #[derive(Accounts)]
 pub struct Vote<'info> {
-    #[account(mut, seeds= [DERUG_DATA_SEED, derug_data.key().as_ref(), payer.key().as_ref()], bump)]
+    #[account(mut)]
     pub derug_request: Box<Account<'info, DerugRequest>>,
     #[account(mut, seeds =[DERUG_DATA_SEED, derug_data.collection.key().as_ref()], bump)]
     pub derug_data: Box<Account<'info, DerugData>>,
@@ -28,7 +29,7 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> 
     let remaining_accounts = ctx.remaining_accounts;
 
     let derug_request = &mut ctx.accounts.derug_request;
-
+    let derug_data = &mut ctx.accounts.derug_data;
     derug_request.request_status = RequestStatus::Voting;
 
     for (vote_record_info, nft_mint_info, nft_metadata_info, nft_token_account_info) in
@@ -64,7 +65,21 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> 
         );
 
         require!(vote_record_info.data_is_empty(), DerugError::AlereadyVoted);
+
+        let mut account_data: Vec<u8> = Vec::new();
+
+        account_data.extend_from_slice(&VoteRecord::discriminator());
+
+        derug_data
+            .active_requests
+            .iter_mut()
+            .find(|req| req.request == derug_request.key())
+            .unwrap()
+            .vote_count += 1;
+
         let vote_record = VoteRecord { voted: true }.try_to_vec().unwrap();
+        // vote_record
+        account_data.extend_from_slice(&vote_record);
 
         create_account(
             CpiContext::new_with_signer(
@@ -81,8 +96,8 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> 
                     &[vote_record_bump],
                 ]],
             ),
-            Rent::default().minimum_balance(vote_record.len()),
-            vote_record.len() as u64,
+            Rent::default().minimum_balance(account_data.len()),
+            account_data.len() as u64,
             ctx.program_id,
         )?;
 
@@ -91,7 +106,7 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> 
         vote_record_info
             .data
             .borrow_mut()
-            .copy_from_slice(&vote_record);
+            .copy_from_slice(&account_data);
     }
 
     Ok(())

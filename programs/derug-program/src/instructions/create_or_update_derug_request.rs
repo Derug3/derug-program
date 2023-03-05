@@ -13,8 +13,9 @@ use anchor_lang::system_program::{transfer, Transfer};
 use itertools::Itertools;
 
 #[derive(Accounts)]
+#[instruction(utility_dtos:Vec<UpdateUtilityDataDto>)]
 pub struct CreateOrUpdateDerugRequest<'info> {
-    #[account(init_if_needed, seeds=[DERUG_DATA_SEED, derug_data.key().as_ref(), payer.key().as_ref()], bump, payer=payer, space =  current_data_len(derug_request))]
+    #[account(init_if_needed, seeds=[DERUG_DATA_SEED, derug_data.key().as_ref(), payer.key().as_ref()], bump, payer=payer, space =  current_data_len(derug_request,utility_dtos))]
     pub derug_request: Account<'info, DerugRequest>,
     #[account(mut, seeds =[DERUG_DATA_SEED, derug_data.collection.key().as_ref()], bump)]
     pub derug_data: Box<Account<'info, DerugData>>,
@@ -48,16 +49,25 @@ pub fn create_or_update_derug_request(
             DerugError::TimeIsOut
         );
     }
-
     if derug_request.request_status == RequestStatus::Initialized {
+        derug_data.total_suggestion_count =
+            derug_data.total_suggestion_count.checked_add(1).unwrap();
+
         derug_request.utility_data = utility_dtos
             .iter()
             .map(|item| UtilityData {
                 description: item.description.clone(),
                 title: item.title.clone(),
+                is_active: item.action == Action::Add,
             })
             .collect();
         derug_request.request_status = RequestStatus::Voting;
+
+        let new_len = derug_data
+            .to_account_info()
+            .data_len()
+            .checked_add(34)
+            .unwrap();
 
         transfer(
             CpiContext::new(
@@ -67,29 +77,20 @@ pub fn create_or_update_derug_request(
                     to: derug_data.to_account_info(),
                 },
             ),
-            Rent::default().minimum_balance(36),
+            Rent::default().minimum_balance(new_len),
         )?;
 
         if derug_data.active_requests.len() == 0 {
             derug_data.voting_started_at = Clock::get().unwrap().unix_timestamp;
         }
 
-        derug_data
-            .to_account_info()
-            .realloc(derug_data.to_account_info().data_len() + 36, false)?;
+        derug_data.to_account_info().realloc(new_len, false)?;
 
         derug_data.active_requests.push(ActiveRequest {
             request: derug_request.key(),
             vote_count: 0,
         });
     } else {
-        ctx.accounts.derug_data.total_suggestion_count = ctx
-            .accounts
-            .derug_data
-            .total_suggestion_count
-            .checked_add(1)
-            .unwrap();
-
         let new_data_len = calculate_new_suggestion_data_len(&utility_dtos, derug_request);
         if new_data_len > derug_request.to_account_info().data_len() {
             transfer(
@@ -122,6 +123,7 @@ pub fn create_or_update_derug_request(
                     derug_request.utility_data.push(UtilityData {
                         title: item.title.clone(),
                         description: item.description.clone(),
+                        is_active: item.action == Action::Add,
                     });
                 }
             });
