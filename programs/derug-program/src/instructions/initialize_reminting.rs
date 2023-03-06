@@ -5,16 +5,15 @@ use crate::{
         derug_data::{DerugData, DerugStatus},
         derug_request::{DerugRequest, RequestStatus},
     },
-    utilities::{create_master_edition_ix, create_metadata_ix},
+    utilities::create_metadata_ix,
 };
 use anchor_lang::prelude::*;
 use anchor_spl::token::{
-    initialize_account, initialize_mint, mint_to, InitializeAccount, InitializeMint, Mint, MintTo,
-    Token,
+    initialize_account, initialize_mint, mint_to, InitializeAccount, InitializeMint, MintTo, Token,
 };
 
 use mpl_token_metadata::{
-    processor::verify_collection,
+    instruction::{create_master_edition_v3, verify_collection},
     state::{EDITION, PREFIX},
     ID as METADATA_PROGRAM_ID,
 };
@@ -33,10 +32,10 @@ pub struct InitializeReminting<'info> {
     #[account(mut)]
     pub token_account: UncheckedAccount<'info>,
     ///CHECK
-    #[account(seeds=[PREFIX.as_ref(), METADATA_PROGRAM_ID.as_ref(), new_collection.key().as_ref(), EDITION.as_ref()],bump, seeds::program = METADATA_PROGRAM_ID)]
+    #[account(mut,seeds=[PREFIX.as_ref(), METADATA_PROGRAM_ID.as_ref(), new_collection.key().as_ref(), EDITION.as_ref()],bump, seeds::program = METADATA_PROGRAM_ID)]
     pub master_edition: UncheckedAccount<'info>,
     ///CHECK
-    #[account(seeds=[PREFIX.as_ref(), METADATA_PROGRAM_ID.as_ref(), new_collection.key().as_ref()], bump,seeds::program = METADATA_PROGRAM_ID)]
+    #[account(mut,seeds=[PREFIX.as_ref(), METADATA_PROGRAM_ID.as_ref(), new_collection.key().as_ref()], bump,seeds::program = METADATA_PROGRAM_ID)]
     pub metadata_account: UncheckedAccount<'info>,
 
     #[account(mut)]
@@ -51,7 +50,6 @@ pub struct InitializeReminting<'info> {
 }
 
 pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
-    msg!("{:?}", ctx.accounts.new_collection);
     require!(
         ctx.accounts.derug_data.derug_status == DerugStatus::Succeeded,
         DerugError::NoWinner
@@ -119,35 +117,53 @@ pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
         ],
     )?;
 
-    let create_master_edition = create_master_edition_ix(
-        &ctx.accounts.new_collection.key(),
-        ctx.accounts.payer.key,
-        ctx.accounts.payer.key,
+    let create_master_edition = create_master_edition_v3(
+        ctx.accounts.metadata_program.key(),
+        ctx.accounts.master_edition.key(),
+        ctx.accounts.new_collection.key(),
+        ctx.accounts.derug_request.derugger,
+        ctx.accounts.payer.key(),
+        ctx.accounts.metadata_account.key(),
+        ctx.accounts.payer.key(),
+        Some(0),
     );
 
     invoke(
         &create_master_edition,
         &[
-            ctx.accounts.metadata_account.to_account_info(),
-            ctx.accounts.new_collection.to_account_info(),
             ctx.accounts.master_edition.to_account_info(),
+            ctx.accounts.new_collection.to_account_info(),
+            ctx.accounts.payer.to_account_info(),
             ctx.accounts.payer.to_account_info().clone(),
-            ctx.accounts.metadata_program.to_account_info(),
-            ctx.accounts.rent.to_account_info(),
+            ctx.accounts.payer.to_account_info().clone(),
+            ctx.accounts.metadata_account.to_account_info(),
+            ctx.accounts.token_program.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
+            ctx.accounts.rent.to_account_info(),
         ],
     )?;
 
-    //TODO: Check if this is right
-    verify_collection(
-        &METADATA_PROGRAM_ID,
+    // //TODO: Check if this is right
+    let verify_ix = verify_collection(
+        ctx.accounts.metadata_program.key(),
+        ctx.accounts.metadata_account.key(),
+        ctx.accounts.payer.key(),
+        ctx.accounts.payer.key(),
+        ctx.accounts.new_collection.key(),
+        ctx.accounts.metadata_account.key(),
+        ctx.accounts.master_edition.key(),
+        None,
+    );
+
+    invoke(
+        &verify_ix,
         &[
-            ctx.accounts.payer.to_account_info(),
             ctx.accounts.metadata_account.to_account_info(),
-            ctx.accounts.master_edition.to_account_info(),
+            ctx.accounts.payer.to_account_info(),
+            ctx.accounts.payer.to_account_info(),
             ctx.accounts.new_collection.to_account_info(),
             ctx.accounts.metadata_account.to_account_info(),
-            ctx.accounts.payer.to_account_info(),
+            ctx.accounts.master_edition.to_account_info(),
         ],
     )?;
 

@@ -9,7 +9,7 @@ url = "https://api.apr.dev"
 
 [provider]
 cluster = "Localnet"
-wallet= "/Users/zazza/Coding/other/derug-program/wallet/keypair.json"
+wallet= "/Users/gorangutovic/Desktop/bonkito/bonkitoUpdateAuthority.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
@@ -35,3 +35,7 @@ address = '3aLReb2KX22Q9Nf6rPVatjzdUv4v74fwFJoyFQZ9Crcd'
 #Update authority
 # [[test.validator.clone]]
 # address = 'KQ1jcFYvnH9DNUzBfVbquRohP9uZ6C7DVJJDyqiGB4P'
+
+[[test.genesis]]
+address="metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+program="./tests/fixtures/mpl_token_metadata.so"
