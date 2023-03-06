@@ -295,32 +295,25 @@ describe("derug-program", () => {
       space: AccountLayout.span,
     });
 
-    const tx = new anchor.web3.Transaction({
+    const txCreateAccs = new anchor.web3.Transaction({
       feePayer: derugger.publicKey,
       recentBlockhash: (
         await anchor.getProvider().connection.getLatestBlockhash()
       ).blockhash,
     });
 
-    tx.add(createMint);
-    tx.add(createTa);
+    txCreateAccs.add(createMint);
+    txCreateAccs.add(createTa);
 
-    try {
-      const txSig = await anchor
-        .getProvider()
-        .connection.sendTransaction(tx, [
-          derugger,
-          newCollectionMint,
-          newCollectionTokenAccount,
-        ]);
-      await anchor.getProvider().connection.confirmTransaction(txSig);
 
-      const mint = await anchor
-        .getProvider()
-        .connection.getAccountInfo(newCollectionMint.publicKey);
-    } catch (error) {
-      console.log(error);
-    }
+    const txSig = await anchor
+      .getProvider()
+      .connection.sendTransaction(txCreateAccs, [
+        derugger,
+        newCollectionMint,
+        newCollectionTokenAccount,
+      ]);
+    await anchor.getProvider().connection.confirmTransaction(txSig);
 
     let [newCollectionMetaplexMetadata] =
       await anchor.web3.PublicKey.findProgramAddress(
@@ -344,41 +337,45 @@ describe("derug-program", () => {
         metaplexProgram
       );
 
-    try {
-      const ix = await program.methods
-        .initializeReminting()
-        .accounts({
-          derugData,
-          derugRequest,
-          newCollection: newCollectionMint.publicKey,
-          metadataAccount: newCollectionMetaplexMetadata,
-          tokenAccount: newCollectionTokenAccount.publicKey,
-          masterEdition: newCollectionEdition,
-          payer: derugger.publicKey,
-          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-          metadataProgram: metaplexProgram,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .signers([derugger])
-        .preInstructions([
-          anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({
-            units: 1400000000,
-          }),
-        ])
-        .instruction();
+    const [collectionAuthorityRecord] = await anchor.web3.PublicKey.findProgramAddress([Buffer.from("metadata"), metaplexProgram.toBuffer(), newCollectionMint.publicKey.toBuffer(), Buffer.from("collection_authority"), derugger.publicKey.toBuffer()], metaplexProgram);
 
-      const tx = new anchor.web3.Transaction({
-        feePayer: derugger.publicKey,
-        recentBlockhash: (
-          await anchor.getProvider().connection.getLatestBlockhash()
-        ).blockhash,
-      });
-      tx.add(ix);
+    const ixInitRemint = await program.methods
+      .initializeReminting()
+      .accounts({
+        derugData,
+        derugRequest,
+        newCollection: newCollectionMint.publicKey,
+        metadataAccount: newCollectionMetaplexMetadata,
+        tokenAccount: newCollectionTokenAccount.publicKey,
+        masterEdition: newCollectionEdition,
+        payer: derugger.publicKey,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        metadataProgram: metaplexProgram,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        collectionAuthorityRecord
+      })
+      .signers([derugger])
+      .preInstructions([
+        anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({
+          units: 1400000000,
+        }),
+      ])
+      .instruction();
 
-      await anchor.getProvider().connection.sendTransaction(tx, [derugger]);
-    } catch (error) {
-      console.log(error);
-    }
+    const txInitReminting = new anchor.web3.Transaction({
+      feePayer: derugger.publicKey,
+      recentBlockhash: (
+        await anchor.getProvider().connection.getLatestBlockhash()
+      ).blockhash,
+    });
+    txInitReminting.add(ixInitRemint);
+
+    await anchor.getProvider().connection.sendTransaction(txInitReminting, [derugger]);
+
+    console.log("INITIALIZED REMINTING");
+
+
+
   });
 });

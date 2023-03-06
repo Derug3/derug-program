@@ -13,7 +13,7 @@ use anchor_spl::token::{
 };
 
 use mpl_token_metadata::{
-    instruction::{create_master_edition_v3, verify_collection},
+    instruction::{approve_collection_authority, create_master_edition_v3},
     state::{EDITION, PREFIX},
     ID as METADATA_PROGRAM_ID,
 };
@@ -38,6 +38,9 @@ pub struct InitializeReminting<'info> {
     #[account(mut,seeds=[PREFIX.as_ref(), METADATA_PROGRAM_ID.as_ref(), new_collection.key().as_ref()], bump,seeds::program = METADATA_PROGRAM_ID)]
     pub metadata_account: UncheckedAccount<'info>,
 
+    #[account(mut)]
+    ///CHECK
+    pub collection_authority_record: UncheckedAccount<'info>,
     #[account(mut)]
     pub payer: Signer<'info>,
     pub system_program: Program<'info, System>,
@@ -143,29 +146,26 @@ pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
         ],
     )?;
 
-    // //TODO: Check if this is right
-    let verify_ix = verify_collection(
+    let approve_collection_authority_ix = approve_collection_authority(
         ctx.accounts.metadata_program.key(),
+        ctx.accounts.collection_authority_record.key(),
+        ctx.accounts.payer.key(),
+        ctx.accounts.payer.key(),
+        ctx.accounts.payer.key(),
         ctx.accounts.metadata_account.key(),
-        ctx.accounts.payer.key(),
-        ctx.accounts.payer.key(),
         ctx.accounts.new_collection.key(),
-        ctx.accounts.metadata_account.key(),
-        ctx.accounts.master_edition.key(),
-        None,
     );
 
-    invoke(
-        &verify_ix,
-        &[
-            ctx.accounts.metadata_account.to_account_info(),
-            ctx.accounts.payer.to_account_info(),
-            ctx.accounts.payer.to_account_info(),
-            ctx.accounts.new_collection.to_account_info(),
-            ctx.accounts.metadata_account.to_account_info(),
-            ctx.accounts.master_edition.to_account_info(),
-        ],
-    )?;
+    let approve_accounts = vec![
+        ctx.accounts.metadata_account.to_account_info(),
+        ctx.accounts.collection_authority_record.to_account_info(),
+        ctx.accounts.payer.to_account_info(),
+        ctx.accounts.payer.to_account_info(),
+        ctx.accounts.metadata_account.to_account_info(),
+        ctx.accounts.new_collection.to_account_info(),
+    ];
+
+    invoke(&approve_collection_authority_ix, &approve_accounts)?;
 
     ctx.accounts.derug_request.request_status = RequestStatus::Reminting;
     ctx.accounts.derug_data.derug_status = DerugStatus::Reminting;
