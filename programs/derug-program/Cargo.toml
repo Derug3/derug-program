@@ -18,7 +18,7 @@ default = []
 [dependencies]
 anchor-lang = { version = "0.26.0", features = ["init-if-needed"] }
 anchor-spl =  "0.26.0"
-solana-program = "1.14.9"
+solana-program = "1.14.11"
 itertools = "0.10.5"
 spl-token = "3.5.0"
 mpl-token-metadata = { version = "1.8.4", features = ["no-entrypoint"] }

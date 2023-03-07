@@ -5,7 +5,6 @@ use crate::{
         derug_data::{DerugData, DerugStatus},
         derug_request::{DerugRequest, RequestStatus},
     },
-    utilities::create_metadata_ix,
 };
 use anchor_lang::prelude::*;
 use anchor_spl::token::{
@@ -14,11 +13,11 @@ use anchor_spl::token::{
 };
 
 use mpl_token_metadata::{
-    instruction::create_master_edition_v3,
-    state::{Metadata, TokenMetadataAccount, EDITION, PREFIX},
+    instruction::{create_master_edition_v3, create_metadata_accounts_v3},
+    state::{Collection, Creator, Metadata, TokenMetadataAccount, EDITION, PREFIX},
     ID as METADATA_PROGRAM_ID,
 };
-use solana_program::{borsh::try_from_slice_unchecked, program::invoke};
+use solana_program::program::invoke;
 
 #[derive(Accounts)]
 pub struct RemintNft<'info> {
@@ -116,6 +115,8 @@ pub fn remint_nft(ctx: Context<RemintNft>) -> Result<()> {
         },
     ))?;
 
+    let old_metadata_account = Metadata::from_account_info(&ctx.accounts.old_metadata).unwrap();
+
     let burn_ix = mpl_token_metadata::instruction::burn_nft(
         METADATA_PROGRAM_ID,
         ctx.accounts.old_metadata.key(),
@@ -152,18 +153,30 @@ pub fn remint_nft(ctx: Context<RemintNft>) -> Result<()> {
         1,
     )?;
 
-    let old_metadata_account =
-        try_from_slice_unchecked::<Metadata>(&ctx.accounts.old_metadata.data.borrow()).unwrap();
-
-    let create_metadata = create_metadata_ix(
-        &ctx.accounts.new_mint.key(),
-        ctx.accounts.temporary_authority.key,
-        ctx.accounts.payer.key,
-        Some(ctx.accounts.new_collection.key()),
-        ctx.accounts.payer.key,
-        &old_metadata_account.data.uri,
-        &old_metadata_account.data.name,
-        &old_metadata_account.data.symbol,
+    let create_metadata = create_metadata_accounts_v3(
+        ctx.accounts.metadata_program.key(),
+        ctx.accounts.new_metadata.key(),
+        ctx.accounts.new_mint.key(),
+        ctx.accounts.payer.key(),
+        ctx.accounts.payer.key(),
+        ctx.accounts.temporary_authority.key(),
+        old_metadata_account.data.name,
+        old_metadata_account.data.symbol,
+        old_metadata_account.data.uri,
+        Some(vec![Creator {
+            address: ctx.accounts.derug_request.derugger,
+            share: 100,
+            verified: false,
+        }]),
+        500,
+        true,
+        true,
+        Some(Collection {
+            key: ctx.accounts.new_collection.key(),
+            verified: false,
+        }),
+        None,
+        None,
     );
 
     invoke(
@@ -177,10 +190,6 @@ pub fn remint_nft(ctx: Context<RemintNft>) -> Result<()> {
             ctx.accounts.system_program.to_account_info(),
         ],
     )?;
-
-    let new_metadata =
-        Metadata::from_account_info(&ctx.accounts.new_metadata.to_account_info()).unwrap();
-    msg!("{:?}", new_metadata);
 
     let create_master_edition = create_master_edition_v3(
         ctx.accounts.metadata_program.key(),
