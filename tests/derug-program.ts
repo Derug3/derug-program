@@ -11,6 +11,7 @@ import {
   MintLayout,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
+import { createUpdateMetadataAccountV2Instruction, MasterEditionV2, Metadata } from "@metaplex-foundation/mpl-token-metadata";
 
 describe("derug-program", () => {
   // Configure the client to use the local cluster.
@@ -27,6 +28,9 @@ describe("derug-program", () => {
     );
     const derugger0 = anchor.web3.Keypair.generate();
     const derugger = anchor.web3.Keypair.generate();
+    const tempUpdateAuthority = anchor.web3.Keypair.generate();
+
+    console.log(derugger.publicKey.toString());
 
     const collectionKey = new anchor.web3.PublicKey(
       "5igf61dzqeaNCq3DjygoNr84QUd4KGNQMQ6A5vdHGYTM"
@@ -305,7 +309,6 @@ describe("derug-program", () => {
     txCreateAccs.add(createMint);
     txCreateAccs.add(createTa);
 
-
     const txSig = await anchor
       .getProvider()
       .connection.sendTransaction(txCreateAccs, [
@@ -375,6 +378,141 @@ describe("derug-program", () => {
 
     console.log("INITIALIZED REMINTING");
 
+    const [oldEdition] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("metadata"), metaplexProgram.toBuffer(), nftMint.toBuffer(), Buffer.from("edition")],
+      metaplexProgram
+    )
+
+    const newNftMintKeypair = anchor.web3.Keypair.generate();
+    const newNftTokenKeypair = anchor.web3.Keypair.generate();
+
+    const [newNftEdition] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("metadata"), metaplexProgram.toBuffer(), newNftMintKeypair.publicKey.toBuffer(), Buffer.from("edition")],
+      metaplexProgram
+    )
+
+    const createNewNftMint = anchor.web3.SystemProgram.createAccount({
+      fromPubkey: derugger.publicKey,
+      lamports: await getMinimumBalanceForRentExemptAccount(
+        anchor.getProvider().connection
+      ),
+      newAccountPubkey: newNftMintKeypair.publicKey,
+      programId: TOKEN_PROGRAM_ID,
+      space: MintLayout.span,
+    });
+
+    const createNewNftToken = anchor.web3.SystemProgram.createAccount({
+      fromPubkey: derugger.publicKey,
+      lamports: await getMinimumBalanceForRentExemptAccount(
+        anchor.getProvider().connection
+      ),
+      newAccountPubkey: newNftTokenKeypair.publicKey,
+      programId: TOKEN_PROGRAM_ID,
+      space: AccountLayout.span,
+    });
+
+    const txCreateAccsNft = new anchor.web3.Transaction({
+      feePayer: derugger.publicKey,
+      recentBlockhash: (
+        await anchor.getProvider().connection.getLatestBlockhash()
+      ).blockhash,
+    });
+
+    txCreateAccsNft.add(createNewNftMint);
+    txCreateAccsNft.add(createNewNftToken);
+
+    const txSigNft = await anchor
+      .getProvider()
+      .connection.sendTransaction(txCreateAccsNft, [
+        derugger,
+        newNftMintKeypair,
+        newNftTokenKeypair,
+      ]);
+    await anchor.getProvider().connection.confirmTransaction(txSigNft);
+
+    const [newNftMetadata] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("metadata"), metaplexProgram.toBuffer(), newNftMintKeypair.publicKey.toBuffer()],
+      metaplexProgram
+    )
+
+    await program.methods.remintNft()
+      .accounts(
+        {
+          derugData,
+          derugRequest,
+          metadataProgram: metaplexProgram,
+          newCollection: newCollectionMint.publicKey,
+          newEdition: newNftEdition,
+          newMetadata: newNftMetadata,
+          oldCollection: collectionKey,
+          oldCollectionMetadata: collectionMetadata,
+          oldEdition,
+          oldMint: nftMint,
+          payer: rugger.publicKey,
+          oldToken: nftTokenAccount,
+          oldMetadata: nftMetadata,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          newMint: newNftMintKeypair.publicKey,
+          newToken: newNftTokenKeypair.publicKey,
+        }
+      )
+      .preInstructions(
+        [anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({
+          units: 1300000
+        })]
+      )
+      .signers([rugger])
+      .rpc();
+
+
+    console.log("REMINTED NFT");
+
+    const newMetadataAccount = await Metadata.fromAccountAddress(anchor.getProvider().connection,
+      newNftMetadata);
+
+    console.log(newMetadataAccount);
+
+
+    const updateMetadataIx = createUpdateMetadataAccountV2Instruction(
+      {
+        metadata: newNftMetadata,
+        updateAuthority: tempUpdateAuthority.publicKey
+      },
+      {
+        updateMetadataAccountArgsV2: {
+          isMutable: true,
+          updateAuthority: tempUpdateAuthority.publicKey,
+          primarySaleHappened: false,
+          data: {
+            collection: newMetadataAccount.collection,
+            creators: newMetadataAccount.data.creators,
+            name: newMetadataAccount.data.name,
+            sellerFeeBasisPoints: newMetadataAccount.data.sellerFeeBasisPoints,
+            symbol: newMetadataAccount.data.symbol,
+            uri: newMetadataAccount.data.uri,
+            uses: newMetadataAccount.uses
+          }
+        }
+      }
+    )
+
+    const updateTx = new anchor.web3.Transaction({
+      feePayer: rugger.publicKey,
+      recentBlockhash: (await anchor.getProvider().connection.getLatestBlockhash()).blockhash
+    })
+
+    updateTx.add(updateMetadataIx);
+
+    try {
+      await anchor.getProvider().connection.sendTransaction(updateTx, [rugger, tempUpdateAuthority]);
+    } catch (error) {
+      console.log(error);
+
+    }
+
+    console.log("UPDATED METADATA ACCOUNT");
 
 
   });

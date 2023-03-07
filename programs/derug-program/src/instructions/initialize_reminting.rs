@@ -101,6 +101,7 @@ pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
     let create_metadata = create_metadata_ix(
         &ctx.accounts.new_collection.key(),
         ctx.accounts.payer.key,
+        ctx.accounts.payer.key,
         None,
         ctx.accounts.payer.key,
         &ctx.accounts.derug_data.collection_uri,

@@ -54,6 +54,7 @@ pub fn current_data_len(
 pub fn create_metadata_ix(
     nft_mint: &Pubkey,
     update_authority: &Pubkey,
+    mint_authority: &Pubkey,
     collection: Option<Pubkey>,
     payer: &Pubkey,
     uri: &String,
@@ -67,27 +68,30 @@ pub fn create_metadata_ix(
 
     if let Some(collection_key) = collection {
         collection_data = Some(Collection {
-            verified: true,
+            verified: false,
             key: collection_key.key(),
         });
 
         collection_details = Some(CollectionDetails::V1 { size: 0 });
     }
 
+    msg!("Update authority: {:?}", update_authority);
+    msg!("Payer: {:?}", payer);
+
     create_metadata_accounts_v3(
         METADATA_PROGRAM_ID,
         metadata_account.0,
         nft_mint.clone(),
+        mint_authority.clone(),
+        mint_authority.clone(),
         update_authority.clone(),
-        update_authority.clone(),
-        payer.clone(),
         name.clone(),
         symbol.clone(),
         uri.clone(),
         Some(vec![Creator {
             address: update_authority.clone(),
             share: 100,
-            verified: true,
+            verified: false,
         }]),
         //TODO: Change this
         500,
@@ -102,6 +106,7 @@ pub fn create_metadata_ix(
 pub fn create_master_edition_ix(
     nft_mint: &Pubkey,
     update_authority: &Pubkey,
+    mint_authority: &Pubkey,
     payer: &Pubkey,
 ) -> Instruction {
     let edition = find_edition_account(nft_mint, "0".to_string());
@@ -112,7 +117,7 @@ pub fn create_master_edition_ix(
         edition.0,
         nft_mint.clone(),
         update_authority.clone(),
-        update_authority.clone(),
+        mint_authority.clone(),
         metadata.0.clone(),
         payer.clone(),
         Some(0),
