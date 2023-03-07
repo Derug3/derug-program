@@ -3,19 +3,14 @@ import { Program } from "@project-serum/anchor";
 import { assert } from "chai";
 import { DerugProgram } from "../target/types/derug_program";
 import updateAuthorityWallet from "../wallet/keypair.json";
-import * as mplTokenMetadata from "@metaplex-foundation/mpl-token-metadata";
-import * as splToken from "@solana/spl-token";
+
 import {
   AccountLayout,
   getMinimumBalanceForRentExemptAccount,
   MintLayout,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import {
-  createUpdateMetadataAccountV2Instruction,
-  MasterEditionV2,
-  Metadata,
-} from "@metaplex-foundation/mpl-token-metadata";
+import { Metadata } from "@metaplex-foundation/mpl-token-metadata";
 
 describe("derug-program", () => {
   // Configure the client to use the local cluster.
@@ -352,7 +347,7 @@ describe("derug-program", () => {
           metaplexProgram.toBuffer(),
           newCollectionMint.publicKey.toBuffer(),
           Buffer.from("collection_authority"),
-          derugger.publicKey.toBuffer(),
+          tempUpdateAuthority.publicKey.toBuffer(),
         ],
         metaplexProgram
       );
@@ -368,6 +363,7 @@ describe("derug-program", () => {
           masterEdition: newCollectionEdition,
           payer: derugger.publicKey,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          tempAuthority: tempUpdateAuthority.publicKey,
           metadataProgram: metaplexProgram,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: anchor.web3.SystemProgram.programId,
@@ -506,6 +502,7 @@ describe("derug-program", () => {
           collectionMasterEdition: newCollectionEdition,
           collectionMetadata: newCollectionMetaplexMetadata,
           collectionMint: newCollectionMint.publicKey,
+          collectionAuthority: collectionAuthorityRecord,
           derugData: derugData,
         })
         .signers([rugger, tempUpdateAuthority])
@@ -519,6 +516,8 @@ describe("derug-program", () => {
       newNftMetadata
     );
 
+    assert.isTrue(meta.collection.verified);
+
     assert.equal(
       meta.updateAuthority.toString(),
       derugger.publicKey.toString()
@@ -530,6 +529,20 @@ describe("derug-program", () => {
     );
 
     assert.equal(meta.mint.toString(), newNftMintKeypair.publicKey.toString());
+
+    assert.exists(
+      (
+        await anchor
+          .getProvider()
+          .connection.getParsedTokenAccountsByOwner(rugger.publicKey, {
+            mint: newNftMintKeypair.publicKey,
+          })
+      ).value.find(
+        (v) =>
+          v.account.data.parsed.info.mint ===
+          newNftMintKeypair.publicKey.toString()
+      )
+    );
 
     console.log("UPDATED METADATA ACCOUNT");
   });

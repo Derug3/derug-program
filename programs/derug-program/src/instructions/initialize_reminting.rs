@@ -5,7 +5,6 @@ use crate::{
         derug_data::{DerugData, DerugStatus},
         derug_request::{DerugRequest, RequestStatus},
     },
-    utilities::create_metadata_ix,
 };
 use anchor_lang::{prelude::*, system_program::Transfer};
 use anchor_spl::token::{
@@ -13,8 +12,10 @@ use anchor_spl::token::{
 };
 
 use mpl_token_metadata::{
-    instruction::{approve_collection_authority, create_master_edition_v3},
-    state::{EDITION, PREFIX},
+    instruction::{
+        approve_collection_authority, create_master_edition_v3, create_metadata_accounts_v3,
+    },
+    state::{Creator, EDITION, PREFIX},
     ID as METADATA_PROGRAM_ID,
 };
 use solana_program::program::invoke;
@@ -37,6 +38,9 @@ pub struct InitializeReminting<'info> {
     ///CHECK
     #[account(mut,seeds=[PREFIX.as_ref(), METADATA_PROGRAM_ID.as_ref(), new_collection.key().as_ref()], bump,seeds::program = METADATA_PROGRAM_ID)]
     pub metadata_account: UncheckedAccount<'info>,
+
+    #[account()]
+    pub temp_authority: SystemAccount<'info>,
 
     #[account(mut)]
     ///CHECK
@@ -121,15 +125,27 @@ pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
         1,
     )?;
 
-    let create_metadata = create_metadata_ix(
-        &ctx.accounts.new_collection.key(),
-        ctx.accounts.payer.key,
-        ctx.accounts.payer.key,
+    let create_metadata = create_metadata_accounts_v3(
+        ctx.accounts.metadata_program.key(),
+        ctx.accounts.metadata_account.key(),
+        ctx.accounts.new_collection.key(),
+        ctx.accounts.payer.key(),
+        ctx.accounts.payer.key(),
+        ctx.accounts.payer.key(),
+        ctx.accounts.derug_data.collection_name.clone(),
+        ctx.accounts.derug_data.collection_symbol.clone(),
+        ctx.accounts.derug_data.collection_uri.clone(),
+        Some(vec![Creator {
+            address: ctx.accounts.payer.key(),
+            share: 100,
+            verified: true,
+        }]),
+        500,
+        true,
+        true,
         None,
-        ctx.accounts.payer.key,
-        &ctx.accounts.derug_data.collection_uri,
-        &ctx.accounts.derug_data.collection_name,
-        &ctx.accounts.derug_data.collection_symbol,
+        None,
+        Some(mpl_token_metadata::state::CollectionDetails::V1 { size: 0 }),
     );
 
     invoke(
@@ -173,7 +189,7 @@ pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
     let approve_collection_authority_ix = approve_collection_authority(
         ctx.accounts.metadata_program.key(),
         ctx.accounts.collection_authority_record.key(),
-        ctx.accounts.payer.key(),
+        ctx.accounts.temp_authority.key(),
         ctx.accounts.payer.key(),
         ctx.accounts.payer.key(),
         ctx.accounts.metadata_account.key(),
@@ -183,7 +199,7 @@ pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
     let approve_accounts = vec![
         ctx.accounts.metadata_account.to_account_info(),
         ctx.accounts.collection_authority_record.to_account_info(),
-        ctx.accounts.payer.to_account_info(),
+        ctx.accounts.temp_authority.to_account_info(),
         ctx.accounts.payer.to_account_info(),
         ctx.accounts.metadata_account.to_account_info(),
         ctx.accounts.new_collection.to_account_info(),
