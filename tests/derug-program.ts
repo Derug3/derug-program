@@ -283,81 +283,81 @@ describe("derug-program", () => {
 
     const newCollectionMint = anchor.web3.Keypair.generate();
     const newCollectionTokenAccount = anchor.web3.Keypair.generate();
+
+    const createMint = anchor.web3.SystemProgram.createAccount({
+      fromPubkey: derugger.publicKey,
+      lamports: await getMinimumBalanceForRentExemptAccount(
+        anchor.getProvider().connection
+      ),
+      newAccountPubkey: newCollectionMint.publicKey,
+      programId: TOKEN_PROGRAM_ID,
+      space: MintLayout.span,
+    });
+
+    const createTa = anchor.web3.SystemProgram.createAccount({
+      fromPubkey: derugger.publicKey,
+      lamports: await getMinimumBalanceForRentExemptAccount(
+        anchor.getProvider().connection
+      ),
+      newAccountPubkey: newCollectionTokenAccount.publicKey,
+      programId: TOKEN_PROGRAM_ID,
+      space: AccountLayout.span,
+    });
+
+    const txCreateAccs = new anchor.web3.Transaction({
+      feePayer: derugger.publicKey,
+      recentBlockhash: (
+        await anchor.getProvider().connection.getLatestBlockhash()
+      ).blockhash,
+    });
+
+    txCreateAccs.add(createMint);
+    txCreateAccs.add(createTa);
+
+    const txSig = await anchor
+      .getProvider()
+      .connection.sendTransaction(txCreateAccs, [
+        derugger,
+        newCollectionMint,
+        newCollectionTokenAccount,
+      ]);
+    await anchor.getProvider().connection.confirmTransaction(txSig);
+
+    let [newCollectionMetaplexMetadata] =
+      await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from("metadata"),
+          metaplexProgram.toBuffer(),
+          newCollectionMint.publicKey.toBuffer(),
+        ],
+        metaplexProgram
+      );
+
+    const [newCollectionEdition] =
+      await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from("metadata"),
+          ,
+          metaplexProgram.toBuffer(),
+          newCollectionMint.publicKey.toBuffer(),
+          Buffer.from("edition"),
+        ],
+        metaplexProgram
+      );
+
+    const [collectionAuthorityRecord] =
+      await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from("metadata"),
+          metaplexProgram.toBuffer(),
+          newCollectionMint.publicKey.toBuffer(),
+          Buffer.from("collection_authority"),
+          derugger.publicKey.toBuffer(),
+        ],
+        metaplexProgram
+      );
     try {
-      const createMint = anchor.web3.SystemProgram.createAccount({
-        fromPubkey: derugger.publicKey,
-        lamports: await getMinimumBalanceForRentExemptAccount(
-          anchor.getProvider().connection
-        ),
-        newAccountPubkey: newCollectionMint.publicKey,
-        programId: TOKEN_PROGRAM_ID,
-        space: MintLayout.span,
-      });
-
-      const createTa = anchor.web3.SystemProgram.createAccount({
-        fromPubkey: derugger.publicKey,
-        lamports: await getMinimumBalanceForRentExemptAccount(
-          anchor.getProvider().connection
-        ),
-        newAccountPubkey: newCollectionTokenAccount.publicKey,
-        programId: TOKEN_PROGRAM_ID,
-        space: AccountLayout.span,
-      });
-
-      const txCreateAccs = new anchor.web3.Transaction({
-        feePayer: derugger.publicKey,
-        recentBlockhash: (
-          await anchor.getProvider().connection.getLatestBlockhash()
-        ).blockhash,
-      });
-
-      txCreateAccs.add(createMint);
-      txCreateAccs.add(createTa);
-
-      const txSig = await anchor
-        .getProvider()
-        .connection.sendTransaction(txCreateAccs, [
-          derugger,
-          newCollectionMint,
-          newCollectionTokenAccount,
-        ]);
-      await anchor.getProvider().connection.confirmTransaction(txSig);
-
-      let [newCollectionMetaplexMetadata] =
-        await anchor.web3.PublicKey.findProgramAddress(
-          [
-            Buffer.from("metadata"),
-            metaplexProgram.toBuffer(),
-            newCollectionMint.publicKey.toBuffer(),
-          ],
-          metaplexProgram
-        );
-
-      const [newCollectionEdition] =
-        await anchor.web3.PublicKey.findProgramAddress(
-          [
-            Buffer.from("metadata"),
-            ,
-            metaplexProgram.toBuffer(),
-            newCollectionMint.publicKey.toBuffer(),
-            Buffer.from("edition"),
-          ],
-          metaplexProgram
-        );
-
-      const [collectionAuthorityRecord] =
-        await anchor.web3.PublicKey.findProgramAddress(
-          [
-            Buffer.from("metadata"),
-            metaplexProgram.toBuffer(),
-            newCollectionMint.publicKey.toBuffer(),
-            Buffer.from("collection_authority"),
-            derugger.publicKey.toBuffer(),
-          ],
-          metaplexProgram
-        );
-
-      const ixInitRemint = await program.methods
+      await program.methods
         .initializeReminting()
         .accounts({
           derugData,
@@ -373,25 +373,13 @@ describe("derug-program", () => {
           systemProgram: anchor.web3.SystemProgram.programId,
           collectionAuthorityRecord,
         })
-        .signers([derugger])
         .preInstructions([
           anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({
-            units: 1400000000,
+            units: 130000000,
           }),
         ])
-        .instruction();
-
-      const txInitReminting = new anchor.web3.Transaction({
-        feePayer: derugger.publicKey,
-        recentBlockhash: (
-          await anchor.getProvider().connection.getLatestBlockhash()
-        ).blockhash,
-      });
-      txInitReminting.add(ixInitRemint);
-
-      await anchor
-        .getProvider()
-        .connection.sendTransaction(txInitReminting, [derugger]);
+        .signers([derugger])
+        .rpc();
     } catch (error) {
       console.log(error);
     }
@@ -468,7 +456,6 @@ describe("derug-program", () => {
       ],
       metaplexProgram
     );
-
     try {
       await program.methods
         .remintNft()
@@ -500,53 +487,29 @@ describe("derug-program", () => {
         ])
         .signers([rugger, tempUpdateAuthority])
         .rpc();
-    } catch (error) {
-      console.log(error);
-    }
 
-    const newMetadataAccount = await Metadata.fromAccountAddress(
-      anchor.getProvider().connection,
-      newNftMetadata
-    );
+      const newMetadataAccount = await Metadata.fromAccountAddress(
+        anchor.getProvider().connection,
+        newNftMetadata
+      );
 
-    const updateMetadataIx = createUpdateMetadataAccountV2Instruction(
-      {
-        metadata: newNftMetadata,
-        updateAuthority: tempUpdateAuthority.publicKey,
-      },
-      {
-        updateMetadataAccountArgsV2: {
-          isMutable: true,
-          updateAuthority: derugger.publicKey,
-          primarySaleHappened: true,
-          data: {
-            collection: newMetadataAccount.collection,
-            creators: newMetadataAccount.data.creators,
-            name: newMetadataAccount.data.name,
-            sellerFeeBasisPoints: newMetadataAccount.data.sellerFeeBasisPoints,
-            symbol: newMetadataAccount.data.symbol,
-            uri: newMetadataAccount.data.uri,
-            uses: newMetadataAccount.uses,
-          },
-        },
-      }
-    );
-
-    const updateTx = new anchor.web3.Transaction({
-      feePayer: rugger.publicKey,
-      recentBlockhash: (
-        await anchor.getProvider().connection.getLatestBlockhash()
-      ).blockhash,
-    });
-
-    updateTx.add(updateMetadataIx);
-
-    try {
-      const tx = await anchor
-        .getProvider()
-        .connection.sendTransaction(updateTx, [rugger, tempUpdateAuthority]);
-
-      await anchor.getProvider().connection.confirmTransaction(tx);
+      await program.methods
+        .updateVerifyCollection()
+        .accounts({
+          derugger: derugger.publicKey,
+          derugRequest: derugRequest,
+          metadataProgram: metaplexProgram,
+          nftMetadata: newNftMetadata,
+          nftMint: newNftMintKeypair.publicKey,
+          payer: rugger.publicKey,
+          tempAuthority: tempUpdateAuthority.publicKey,
+          collectionMasterEdition: newCollectionEdition,
+          collectionMetadata: newCollectionMetaplexMetadata,
+          collectionMint: newCollectionMint.publicKey,
+          derugData: derugData,
+        })
+        .signers([rugger, tempUpdateAuthority])
+        .rpc();
     } catch (error) {
       console.log(error);
     }

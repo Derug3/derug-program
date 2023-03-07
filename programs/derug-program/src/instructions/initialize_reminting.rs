@@ -7,7 +7,7 @@ use crate::{
     },
     utilities::create_metadata_ix,
 };
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, system_program::Transfer};
 use anchor_spl::token::{
     initialize_account, initialize_mint, mint_to, InitializeAccount, InitializeMint, MintTo, Token,
 };
@@ -62,6 +62,29 @@ pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
         ctx.accounts.derug_request.request_status == RequestStatus::Succeeded,
         DerugError::NoWinner
     );
+
+    anchor_lang::system_program::transfer(
+        CpiContext::new(
+            ctx.accounts.system_program.to_account_info(),
+            Transfer {
+                from: ctx.accounts.payer.to_account_info(),
+                to: ctx.accounts.derug_data.to_account_info(),
+            },
+        ),
+        Rent::default().minimum_balance(32),
+    )?;
+
+    ctx.accounts.derug_data.to_account_info().realloc(
+        ctx.accounts
+            .derug_data
+            .to_account_info()
+            .data_len()
+            .checked_add(32)
+            .unwrap(),
+        false,
+    )?;
+
+    ctx.accounts.derug_data.new_collection = Some(ctx.accounts.new_collection.key());
 
     initialize_mint(
         CpiContext::new(

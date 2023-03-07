@@ -42,4 +42,8 @@ pub mod derug_program {
     pub fn remint_nft(ctx: Context<RemintNft>) -> Result<()> {
         instructions::remint_nft(ctx)
     }
+
+    pub fn update_verify_collection(ctx: Context<UpdateVerifyCollection>) -> Result<()> {
+        instructions::update_verify_collection(ctx)
+    }
 }
