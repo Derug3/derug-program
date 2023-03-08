@@ -1,5 +1,5 @@
 use crate::{
-    constants::DERUG_DATA_SEED,
+    constants::{AUTHORITY_SEED, DERUG_DATA_SEED},
     errors::DerugError,
     state::{
         derug_data::{DerugData, DerugStatus},
@@ -39,8 +39,9 @@ pub struct InitializeReminting<'info> {
     #[account(mut,seeds=[PREFIX.as_ref(), METADATA_PROGRAM_ID.as_ref(), new_collection.key().as_ref()], bump,seeds::program = METADATA_PROGRAM_ID)]
     pub metadata_account: UncheckedAccount<'info>,
 
-    #[account()]
-    pub temp_authority: SystemAccount<'info>,
+    #[account(seeds=[DERUG_DATA_SEED,derug_request.key().as_ref(),AUTHORITY_SEED],bump)]
+    ///CHECK
+    pub pda_authority: UncheckedAccount<'info>,
 
     #[account(mut)]
     ///CHECK
@@ -189,7 +190,7 @@ pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
     let approve_collection_authority_ix = approve_collection_authority(
         ctx.accounts.metadata_program.key(),
         ctx.accounts.collection_authority_record.key(),
-        ctx.accounts.temp_authority.key(),
+        ctx.accounts.pda_authority.key(),
         ctx.accounts.payer.key(),
         ctx.accounts.payer.key(),
         ctx.accounts.metadata_account.key(),
@@ -199,7 +200,7 @@ pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
     let approve_accounts = vec![
         ctx.accounts.metadata_account.to_account_info(),
         ctx.accounts.collection_authority_record.to_account_info(),
-        ctx.accounts.temp_authority.to_account_info(),
+        ctx.accounts.pda_authority.to_account_info(),
         ctx.accounts.payer.to_account_info(),
         ctx.accounts.metadata_account.to_account_info(),
         ctx.accounts.new_collection.to_account_info(),

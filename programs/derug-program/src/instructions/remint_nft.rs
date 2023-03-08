@@ -1,5 +1,5 @@
 use crate::{
-    constants::DERUG_DATA_SEED,
+    constants::{AUTHORITY_SEED, DERUG_DATA_SEED},
     errors::DerugError,
     state::{
         derug_data::{DerugData, DerugStatus},
@@ -17,7 +17,7 @@ use mpl_token_metadata::{
     state::{Collection, Creator, Metadata, TokenMetadataAccount, EDITION, PREFIX},
     ID as METADATA_PROGRAM_ID,
 };
-use solana_program::program::invoke;
+use solana_program::program::{invoke, invoke_signed};
 
 #[derive(Accounts)]
 pub struct RemintNft<'info> {
@@ -57,9 +57,9 @@ pub struct RemintNft<'info> {
     ///CHECK
     #[account(mut, seeds=[PREFIX.as_ref(), METADATA_PROGRAM_ID.as_ref(), new_mint.key().as_ref(), EDITION.as_ref()],bump, seeds::program = METADATA_PROGRAM_ID)]
     pub new_edition: UncheckedAccount<'info>,
-
-    #[account(mut)]
-    pub temporary_authority: Signer<'info>,
+    #[account(seeds=[DERUG_DATA_SEED,derug_request.key().as_ref(),AUTHORITY_SEED],bump)]
+    ///CHECK
+    pub pda_authority: UncheckedAccount<'info>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -159,7 +159,7 @@ pub fn remint_nft(ctx: Context<RemintNft>) -> Result<()> {
         ctx.accounts.new_mint.key(),
         ctx.accounts.payer.key(),
         ctx.accounts.payer.key(),
-        ctx.accounts.temporary_authority.key(),
+        ctx.accounts.pda_authority.key(),
         old_metadata_account.data.name,
         old_metadata_account.data.symbol,
         old_metadata_account.data.uri,
@@ -179,41 +179,53 @@ pub fn remint_nft(ctx: Context<RemintNft>) -> Result<()> {
         None,
     );
 
-    invoke(
+    invoke_signed(
         &create_metadata,
         &[
             ctx.accounts.new_metadata.to_account_info(),
             ctx.accounts.new_mint.to_account_info(),
             ctx.accounts.payer.to_account_info().clone(),
             ctx.accounts.payer.to_account_info().clone(),
-            ctx.accounts.temporary_authority.to_account_info().clone(),
+            ctx.accounts.pda_authority.to_account_info().clone(),
             ctx.accounts.system_program.to_account_info(),
         ],
+        &[&[
+            DERUG_DATA_SEED,
+            ctx.accounts.derug_request.key().as_ref(),
+            AUTHORITY_SEED,
+            &[*ctx.bumps.get(&"pda_authority".to_string()).unwrap()],
+        ]],
     )?;
 
     let create_master_edition = create_master_edition_v3(
         ctx.accounts.metadata_program.key(),
         ctx.accounts.new_edition.key(),
         ctx.accounts.new_mint.key(),
-        ctx.accounts.temporary_authority.key(),
+        ctx.accounts.pda_authority.key(),
         ctx.accounts.payer.key(),
         ctx.accounts.new_metadata.key(),
         ctx.accounts.payer.key(),
         Some(0),
     );
 
-    invoke(
+    invoke_signed(
         &create_master_edition,
         &[
             ctx.accounts.new_edition.to_account_info(),
             ctx.accounts.new_mint.to_account_info(),
-            ctx.accounts.temporary_authority.to_account_info().clone(),
+            ctx.accounts.pda_authority.to_account_info().clone(),
             ctx.accounts.payer.to_account_info().clone(),
             ctx.accounts.payer.to_account_info().clone(),
             ctx.accounts.new_metadata.to_account_info(),
             ctx.accounts.token_program.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
         ],
+        &[&[
+            DERUG_DATA_SEED,
+            ctx.accounts.derug_request.key().as_ref(),
+            AUTHORITY_SEED,
+            &[*ctx.bumps.get(&"pda_authority".to_string()).unwrap()],
+        ]],
     )?;
 
     ctx.accounts.derug_data.total_reminted = ctx
