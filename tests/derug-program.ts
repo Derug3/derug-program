@@ -199,7 +199,6 @@ describe("derug-program", () => {
     const [voteRecord] = anchor.web3.PublicKey.findProgramAddressSync(
       [
         Buffer.from("derug-data"),
-        rugger.publicKey.toBuffer(),
         nftMint.toBuffer(),
         Buffer.from("vote-record"),
       ],

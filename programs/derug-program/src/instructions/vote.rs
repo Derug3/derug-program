@@ -1,8 +1,9 @@
+use std::ops::DerefMut;
+
 use crate::{constants::VOTE_RECORD_SEED, errors::DerugError, state::derug_request::RequestStatus};
 use anchor_lang::{
     prelude::*,
     system_program::{create_account, CreateAccount},
-    Discriminator,
 };
 use anchor_spl::token::{Mint, TokenAccount};
 use itertools::Itertools;
@@ -40,7 +41,7 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> 
         let nft_token_account = Account::<TokenAccount>::try_from(nft_token_account_info)?;
 
         let (vote_record_pubkey, vote_record_bump) =
-            VoteRecord::get_seeds(nft_mint_info.key, ctx.accounts.payer.key, ctx.program_id);
+            VoteRecord::get_seeds(nft_mint_info.key, ctx.program_id);
 
         require!(
             vote_record_info.key() == vote_record_pubkey,
@@ -66,10 +67,6 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> 
 
         require!(vote_record_info.data_is_empty(), DerugError::AlereadyVoted);
 
-        let mut account_data: Vec<u8> = Vec::new();
-
-        account_data.extend_from_slice(&VoteRecord::discriminator());
-
         derug_data
             .active_requests
             .iter_mut()
@@ -77,9 +74,8 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> 
             .unwrap()
             .vote_count += 1;
 
-        let vote_record = VoteRecord { voted: true }.try_to_vec().unwrap();
-        // vote_record
-        account_data.extend_from_slice(&vote_record);
+        let vote_record = VoteRecord { voted: true };
+        let vote_record_length = 8 + vote_record.try_to_vec()?.len();
 
         create_account(
             CpiContext::new_with_signer(
@@ -90,23 +86,19 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> 
                 },
                 &[&[
                     DERUG_DATA_SEED,
-                    ctx.accounts.payer.key.as_ref(),
                     nft_mint.key().as_ref(),
                     VOTE_RECORD_SEED,
                     &[vote_record_bump],
                 ]],
             ),
-            Rent::default().minimum_balance(account_data.len()),
-            account_data.len() as u64,
+            Rent::default().minimum_balance(vote_record_length),
+            vote_record_length as u64,
             ctx.program_id,
         )?;
 
         derug_request.vote_count = derug_request.vote_count.checked_add(1).unwrap();
 
-        vote_record_info
-            .data
-            .borrow_mut()
-            .copy_from_slice(&account_data);
+        vote_record.try_serialize(vote_record_info.try_borrow_mut_data()?.deref_mut())?;
     }
 
     Ok(())

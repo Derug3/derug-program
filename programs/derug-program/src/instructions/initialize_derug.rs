@@ -27,7 +27,7 @@ pub fn initialize_derug(ctx: Context<InitializeDerug>, total_supply: u32) -> Res
 
     let derug_data = &mut ctx.accounts.derug_data;
 
-    derug_data.date_added = Clock::get().unwrap().unix_timestamp;
+    derug_data.date_added = Clock::get()?.unix_timestamp;
     derug_data.collection = ctx.accounts.collection_key.key();
     derug_data.rug_update_authority = collection_metadata.update_authority;
     derug_data.collection_metadata = ctx.accounts.collection_metadata.key();

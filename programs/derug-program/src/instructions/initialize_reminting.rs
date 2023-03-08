@@ -83,7 +83,7 @@ pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
             .derug_data
             .to_account_info()
             .data_len()
-            .checked_add(32)
+            .checked_add(33)
             .unwrap(),
         false,
     )?;

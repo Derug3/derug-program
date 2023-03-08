@@ -8,8 +8,8 @@ derug_program = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
 
 [provider]
 cluster = "Localnet"
-wallet= "/Users/gorangutovic/Desktop/programs/derug-program/wallet/keypair.json"
-# wallet = "/Users/zazza/Coding/other/derug-program/wallet/keypair.json"
+# wallet= "/Users/gorangutovic/Desktop/programs/derug-program/wallet/keypair.json"
+wallet = "/Users/zazza/Coding/other/derug-program/wallet/keypair.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
