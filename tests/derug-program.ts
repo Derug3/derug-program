@@ -29,8 +29,6 @@ describe("derug-program", () => {
     const derugger0 = anchor.web3.Keypair.generate();
     const derugger = anchor.web3.Keypair.generate();
 
-    const tempUpdateAuthority = anchor.web3.Keypair.generate();
-
     const collectionKey = new anchor.web3.PublicKey(
       "5igf61dzqeaNCq3DjygoNr84QUd4KGNQMQ6A5vdHGYTM"
     );
@@ -339,6 +337,15 @@ describe("derug-program", () => {
         metaplexProgram
       );
 
+    const [pdaAuthority] = anchor.web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("derug-data"),
+        derugRequest.toBuffer(),
+        Buffer.from("authority"),
+      ],
+      program.programId
+    );
+
     const [collectionAuthorityRecord] =
       await anchor.web3.PublicKey.findProgramAddress(
         [
@@ -346,7 +353,7 @@ describe("derug-program", () => {
           metaplexProgram.toBuffer(),
           newCollectionMint.publicKey.toBuffer(),
           Buffer.from("collection_authority"),
-          tempUpdateAuthority.publicKey.toBuffer(),
+          pdaAuthority.toBuffer(),
         ],
         metaplexProgram
       );
@@ -362,7 +369,7 @@ describe("derug-program", () => {
           masterEdition: newCollectionEdition,
           payer: derugger.publicKey,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-          tempAuthority: tempUpdateAuthority.publicKey,
+          pdaAuthority: pdaAuthority,
           metadataProgram: metaplexProgram,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: anchor.web3.SystemProgram.programId,
@@ -471,7 +478,7 @@ describe("derug-program", () => {
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
           systemProgram: anchor.web3.SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
-          temporaryAuthority: tempUpdateAuthority.publicKey,
+          pdaAuthority,
           newMint: newNftMintKeypair.publicKey,
           newToken: newNftTokenKeypair.publicKey,
         })
@@ -480,7 +487,7 @@ describe("derug-program", () => {
             units: 130000000,
           }),
         ])
-        .signers([rugger, tempUpdateAuthority])
+        .signers([rugger])
         .rpc();
 
       const newMetadataAccount = await Metadata.fromAccountAddress(
@@ -497,14 +504,14 @@ describe("derug-program", () => {
           nftMetadata: newNftMetadata,
           nftMint: newNftMintKeypair.publicKey,
           payer: rugger.publicKey,
-          tempAuthority: tempUpdateAuthority.publicKey,
+          pdaAuthority,
           collectionMasterEdition: newCollectionEdition,
           collectionMetadata: newCollectionMetaplexMetadata,
           collectionMint: newCollectionMint.publicKey,
           collectionAuthority: collectionAuthorityRecord,
           derugData: derugData,
         })
-        .signers([rugger, tempUpdateAuthority])
+        .signers([rugger])
         .rpc();
     } catch (error) {
       console.log(error);
