@@ -117,6 +117,25 @@ pub fn remint_nft(ctx: Context<RemintNft>) -> Result<()> {
 
     let old_metadata_account = Metadata::from_account_info(&ctx.accounts.old_metadata).unwrap();
 
+    if let Some(collection) = old_metadata_account.collection {
+        require!(
+            collection.key == ctx.accounts.derug_data.collection,
+            DerugError::WrongCollection
+        );
+    } else {
+        require!(
+            old_metadata_account
+                .data
+                .creators
+                .unwrap()
+                .get(0)
+                .unwrap()
+                .address
+                == ctx.accounts.derug_data.collection,
+            DerugError::WrongCollection
+        );
+    }
+
     let burn_ix = mpl_token_metadata::instruction::burn_nft(
         METADATA_PROGRAM_ID,
         ctx.accounts.old_metadata.key(),
