@@ -6,7 +6,7 @@ pub mod state;
 pub mod utilities;
 use instructions::*;
 use state::*;
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("drgnPyduLEuNqAcsSRfhYDndd9qUSLfHUZdwDxzAXF4");
 
 #[program]
 pub mod derug_program {

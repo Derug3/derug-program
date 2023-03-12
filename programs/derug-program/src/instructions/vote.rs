@@ -40,7 +40,7 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> 
         let nft_token_account = Account::<TokenAccount>::try_from(nft_token_account_info)?;
 
         let (vote_record_pubkey, vote_record_bump) =
-            VoteRecord::get_seeds(nft_mint_info.key, ctx.accounts.payer.key, ctx.program_id);
+            VoteRecord::get_seeds(nft_mint_info.key, ctx.program_id);
 
         require!(
             vote_record_info.key() == vote_record_pubkey,
