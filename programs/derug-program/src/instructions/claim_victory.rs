@@ -1,4 +1,7 @@
-use anchor_lang::prelude::*;
+use anchor_lang::{
+    prelude::*,
+    system_program::{transfer, Transfer},
+};
 use itertools::Itertools;
 
 use crate::{
@@ -18,6 +21,9 @@ pub struct ClaimVictory<'info> {
     pub derug_data: Box<Account<'info, DerugData>>,
     #[account(mut)]
     pub payer: Signer<'info>,
+    ///CHECK
+    #[account(mut, address="DRG3YRmurqpWQ1jEjK8DiWMuqPX9yL32LXLbuRdoiQwt".parse::<Pubkey>().unwrap())]
+    pub fee_wallet: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
 }
 
@@ -65,6 +71,17 @@ pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
 
     derug_data.derug_status = DerugStatus::Succeeded;
     derug_request.request_status = RequestStatus::Succeeded;
+
+    transfer(
+        CpiContext::new(
+            ctx.accounts.system_program.to_account_info(),
+            Transfer {
+                from: ctx.accounts.payer.to_account_info(),
+                to: ctx.accounts.fee_wallet.to_account_info(),
+            },
+        ),
+        9000000,
+    )?;
 
     Ok(())
 }

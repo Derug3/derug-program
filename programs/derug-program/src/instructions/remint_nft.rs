@@ -6,7 +6,10 @@ use crate::{
         derug_request::{DerugRequest, RequestStatus},
     },
 };
-use anchor_lang::prelude::*;
+use anchor_lang::{
+    prelude::*,
+    system_program::{transfer, Transfer},
+};
 use anchor_spl::token::{
     initialize_account, initialize_mint, mint_to, InitializeAccount, InitializeMint, Mint, MintTo,
     Token, TokenAccount,
@@ -64,6 +67,9 @@ pub struct RemintNft<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     pub system_program: Program<'info, System>,
+    ///CHECK
+    #[account(mut, address = "DRG3YRmurqpWQ1jEjK8DiWMuqPX9yL32LXLbuRdoiQwt".parse::<Pubkey>().unwrap())]
+    pub fee_wallet: AccountInfo<'info>,
     ///CHECK
     #[account(address = METADATA_PROGRAM_ID)]
     pub metadata_program: UncheckedAccount<'info>,
@@ -245,6 +251,17 @@ pub fn remint_nft(ctx: Context<RemintNft>) -> Result<()> {
             AUTHORITY_SEED,
             &[*ctx.bumps.get(&"pda_authority".to_string()).unwrap()],
         ]],
+    )?;
+
+    transfer(
+        CpiContext::new(
+            ctx.accounts.system_program.to_account_info(),
+            Transfer {
+                from: ctx.accounts.payer.to_account_info(),
+                to: ctx.accounts.fee_wallet.to_account_info(),
+            },
+        ),
+        9000000,
     )?;
 
     ctx.accounts.derug_data.total_reminted = ctx
