@@ -90,7 +90,6 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> 
                 },
                 &[&[
                     DERUG_DATA_SEED,
-                    ctx.accounts.payer.key.as_ref(),
                     nft_mint.key().as_ref(),
                     VOTE_RECORD_SEED,
                     &[vote_record_bump],

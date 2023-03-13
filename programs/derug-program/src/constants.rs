@@ -9,4 +9,4 @@ pub const AUTHORITY_SEED: &[u8] = b"authority";
 //MAIN
 // pub const VOTING_TIME: i64 = 259200;
 //TEST
-pub const VOTING_TIME: i64 = 1;
+pub const VOTING_TIME: i64 = 3600;
