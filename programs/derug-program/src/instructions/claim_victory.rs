@@ -28,8 +28,7 @@ pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
         ctx.accounts.payer.key() == derug_request.derugger.key(),
         DerugError::WrongDerugger
     );
-    msg!("{:?}", derug_data.voting_started_at);
-    msg!("{:?}", Clock::get().unwrap().unix_timestamp);
+
     require!(
         derug_data
             .voting_started_at

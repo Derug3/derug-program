@@ -30,8 +30,8 @@ pub struct RemintNft<'info> {
     #[account()]
     pub old_collection: Box<Account<'info, Mint>>,
     ///CHECK
-    #[account(mut, seeds=[PREFIX.as_ref(), METADATA_PROGRAM_ID.as_ref(), old_collection.key().as_ref()], bump,seeds::program = METADATA_PROGRAM_ID)]
-    pub old_collection_metadata: UncheckedAccount<'info>,
+    // #[account(mut, seeds=[PREFIX.as_ref(), METADATA_PROGRAM_ID.as_ref(), old_collection.key().as_ref()], bump,seeds::program = METADATA_PROGRAM_ID)]
+    // pub old_collection_metadata: UncheckedAccount<'info>,
     #[account(mut)]
     pub old_mint: Box<Account<'info, Mint>>,
     #[account(mut)]
@@ -71,7 +71,9 @@ pub struct RemintNft<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn remint_nft(ctx: Context<RemintNft>) -> Result<()> {
+pub fn remint_nft<'a, 'b, 'c, 'info>(
+    ctx: Context<'a, 'b, 'c, 'info, RemintNft<'info>>,
+) -> Result<()> {
     require!(
         ctx.accounts.old_collection.key() == ctx.accounts.derug_data.collection,
         DerugError::WrongCollection
@@ -136,6 +138,23 @@ pub fn remint_nft(ctx: Context<RemintNft>) -> Result<()> {
         );
     }
 
+    let mut burn_ix_accounts: Vec<AccountInfo> = vec![
+        ctx.accounts.old_metadata.to_account_info(),
+        ctx.accounts.payer.to_account_info(),
+        ctx.accounts.old_mint.to_account_info(),
+        ctx.accounts.old_token.to_account_info(),
+        ctx.accounts.old_edition.to_account_info(),
+        ctx.accounts.token_program.to_account_info(),
+    ];
+
+    let old_collection = if *ctx.accounts.old_collection.to_account_info().owner == spl_token::ID {
+        let old_collection = ctx.remaining_accounts.iter().next().unwrap();
+        burn_ix_accounts.push(old_collection.clone());
+        Some(old_collection.key())
+    } else {
+        None
+    };
+
     let burn_ix = mpl_token_metadata::instruction::burn_nft(
         METADATA_PROGRAM_ID,
         ctx.accounts.old_metadata.key(),
@@ -144,21 +163,10 @@ pub fn remint_nft(ctx: Context<RemintNft>) -> Result<()> {
         ctx.accounts.old_token.key(),
         ctx.accounts.old_edition.key(),
         ctx.accounts.token_program.key(),
-        Some(ctx.accounts.old_collection_metadata.key()),
+        old_collection,
     );
 
-    invoke(
-        &burn_ix,
-        &[
-            ctx.accounts.old_metadata.to_account_info(),
-            ctx.accounts.payer.to_account_info(),
-            ctx.accounts.old_mint.to_account_info(),
-            ctx.accounts.old_token.to_account_info(),
-            ctx.accounts.old_edition.to_account_info(),
-            ctx.accounts.token_program.to_account_info(),
-            ctx.accounts.old_collection_metadata.to_account_info(),
-        ],
-    )?;
+    invoke(&burn_ix, &burn_ix_accounts)?;
 
     mint_to(
         CpiContext::new(

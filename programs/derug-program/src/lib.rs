@@ -39,7 +39,9 @@ pub mod derug_program {
         instructions::initialize_reminting(ctx)
     }
 
-    pub fn remint_nft(ctx: Context<RemintNft>) -> Result<()> {
+    pub fn remint_nft<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, RemintNft<'info>>,
+    ) -> Result<()> {
         instructions::remint_nft(ctx)
     }
 

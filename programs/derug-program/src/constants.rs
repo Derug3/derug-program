@@ -7,6 +7,6 @@ pub const TOKEN_SEED: &[u8] = b"token";
 pub const MINT_SEED: &[u8] = b"mint";
 pub const AUTHORITY_SEED: &[u8] = b"authority";
 //MAIN
-// pub const VOTING_TIME: i64 = 259200;
+// pub const VOTING_TIME: i64 = 25920000;
 //TEST
-pub const VOTING_TIME: i64 = 3600;
+pub const VOTING_TIME: i64 = 360;

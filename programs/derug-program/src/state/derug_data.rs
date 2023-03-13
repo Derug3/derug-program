@@ -7,7 +7,7 @@ use mpl_token_metadata::state::{MAX_NAME_LENGTH, MAX_SYMBOL_LENGTH, MAX_URI_LENG
 pub struct DerugData {
     pub collection: Pubkey,
     pub rug_update_authority: Pubkey,
-    pub collection_metadata: Pubkey,
+    pub collection_metadata: Option<Pubkey>,
     pub total_supply: u32,
     pub new_collection: Option<Pubkey>,
     pub date_added: i64,
@@ -24,7 +24,8 @@ pub struct DerugData {
 
 impl DerugData {
     pub const LEN: usize = 
-      3 * 32  //First three pubkeys
+    2 * 32  //First two pubkeys
+    +33  //Optional collection metadata account
     + 4 //total amount of nfts in rugged collection 
     + 33 //new_collection 
     + 8 //timestamp of derug account creation 
