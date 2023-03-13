@@ -1,4 +1,8 @@
-use crate::{constants::VOTE_RECORD_SEED, errors::DerugError, state::derug_request::RequestStatus};
+use crate::{
+    constants::VOTE_RECORD_SEED,
+    errors::DerugError,
+    state::{derug_data::DerugStatus, derug_request::RequestStatus},
+};
 use anchor_lang::{
     prelude::*,
     system_program::{create_account, CreateAccount},
@@ -31,6 +35,7 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> 
     let derug_request = &mut ctx.accounts.derug_request;
     let derug_data = &mut ctx.accounts.derug_data;
     derug_request.request_status = RequestStatus::Voting;
+    derug_data.derug_status = DerugStatus::Voting;
 
     for (vote_record_info, nft_mint_info, nft_metadata_info, nft_token_account_info) in
         remaining_accounts.iter().tuples()
@@ -81,6 +86,8 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> 
         // vote_record
         account_data.extend_from_slice(&vote_record);
 
+        derug_request.vote_count = derug_request.vote_count.checked_add(1).unwrap();
+
         create_account(
             CpiContext::new_with_signer(
                 ctx.accounts.system_program.to_account_info(),
@@ -99,8 +106,6 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> 
             account_data.len() as u64,
             ctx.program_id,
         )?;
-
-        derug_request.vote_count = derug_request.vote_count.checked_add(1).unwrap();
 
         vote_record_info
             .data
