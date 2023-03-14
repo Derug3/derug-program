@@ -1,10 +1,7 @@
 use crate::{
     constants::VOTE_RECORD_SEED,
     errors::DerugError,
-    state::{
-        derug_data::{self, DerugStatus},
-        derug_request::RequestStatus,
-    },
+    state::{derug_data::DerugStatus, derug_request::RequestStatus},
 };
 use anchor_lang::{
     prelude::*,
@@ -91,44 +88,40 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> 
 
         derug_request.vote_count = derug_request.vote_count.checked_add(1).unwrap();
 
-        //If more than % of NFTs voted, tip the request into succeeded,
-        //and only then will it be able to claim victory
-        // if derug_request.vote_count
-        //     > derug_data
-        //         .total_supply
-        //         .checked_div(derug_data.active_requests.len().try_into().unwrap())
-        //         .unwrap()
-        //     && derug_data.period_end < Clock::get().unwrap().unix_timestamp
-        // {
+        //Set the percentage
+        let mut threshold = ctx
+            .accounts
+            .derug_data
+            .total_supply
+            .checked_div(
+                ctx.accounts
+                    .derug_data
+                    .active_requests
+                    .len()
+                    .try_into()
+                    .unwrap(),
+            )
+            .unwrap();
 
-        // }
+        //In these extreme cases set an artificial percentage
+        if ctx.accounts.derug_data.active_requests.len() as u8 == 1 {
+            threshold = ctx.accounts.derug_data.total_supply.checked_div(2).unwrap();
+        } else if ctx.accounts.derug_data.active_requests.len() as u8 > 5 {
+            threshold = ctx.accounts.derug_data.total_supply.checked_div(5).unwrap()
+        }
 
-        let current_time = Clock::get().unwrap().unix_timestamp;
-
-        // if current_time > ctx.accounts.derug_data.period_end {
-        //     if let Some(winning_request) =
-        //         ctx.accounts
-        //             .derug_data
-        //             .active_requests
-        //             .iter_mut()
-        //             .find(|req| {
-        //                 req.vote_count
-        //                     > ctx
-        //                         .accounts
-        //                         .derug_data
-        //                         .total_supply
-        //                         .checked_div(
-        //                             ctx.accounts
-        //                                 .derug_data
-        //                                 .active_requests
-        //                                 .len()
-        //                                 .try_into()
-        //                                 .unwrap(),
-        //                         )
-        //                         .unwrap() as i32
-        //             })
-        //     {}
-        // }
+        //Set this to true if he passed the threshold
+        if derug_request.vote_count > threshold {
+            if let Some(winning_request) = ctx
+                .accounts
+                .derug_data
+                .active_requests
+                .iter_mut()
+                .find(|request| request.request == derug_request.key())
+            {
+                winning_request.winning = true;
+            }
+        }
 
         create_account(
             CpiContext::new_with_signer(

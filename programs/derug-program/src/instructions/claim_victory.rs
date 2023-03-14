@@ -30,12 +30,7 @@ pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
     );
 
     require!(
-        derug_data.derug_status == DerugStatus::Succeeded,
-        DerugError::InvalidStatus
-    );
-
-    require!(
-        derug_request.request_status == RequestStatus::Succeeded,
+        Clock::get().unwrap().unix_timestamp > derug_data.period_end,
         DerugError::InvalidStatus
     );
 
@@ -45,7 +40,7 @@ pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
     let active_requests = derug_data
         .active_requests
         .iter()
-        .filter(|request| request.vote_count > 0)
+        .filter(|request| request.vote_count > 0 && request.winning == true)
         .collect_vec();
 
     let winner = active_requests.get(0).unwrap();
@@ -64,6 +59,9 @@ pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
     if multiple_winners.len() > 1 {
         panic!("There are multiple winners");
     }
+
+    derug_data.derug_status = DerugStatus::Succeeded;
+    derug_request.request_status = RequestStatus::Succeeded;
 
     Ok(())
 }
