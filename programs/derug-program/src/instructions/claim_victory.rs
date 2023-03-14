@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use itertools::Itertools;
 
 use crate::{
-    constants::{DERUG_DATA_SEED, VOTING_TIME},
+    constants::DERUG_DATA_SEED,
     errors::DerugError,
     state::{
         derug_data::{DerugData, DerugStatus},
@@ -30,12 +30,13 @@ pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
     );
 
     require!(
-        derug_data
-            .voting_started_at
-            .checked_add(VOTING_TIME)
-            .unwrap()
-            < Clock::get().unwrap().unix_timestamp,
-        DerugError::TimeIsOut
+        derug_data.derug_status == DerugStatus::Succeeded,
+        DerugError::InvalidStatus
+    );
+
+    require!(
+        derug_request.request_status == RequestStatus::Succeeded,
+        DerugError::InvalidStatus
     );
 
     derug_data.winning_request = Some(derug_request.key());
@@ -63,9 +64,6 @@ pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
     if multiple_winners.len() > 1 {
         panic!("There are multiple winners");
     }
-
-    derug_data.derug_status = DerugStatus::Succeeded;
-    derug_request.request_status = RequestStatus::Succeeded;
 
     Ok(())
 }

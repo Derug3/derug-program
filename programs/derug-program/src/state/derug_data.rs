@@ -12,7 +12,7 @@ pub struct DerugData {
     pub new_collection: Option<Pubkey>,
     pub date_added: i64,
     pub derug_status: DerugStatus,
-    pub voting_started_at: i64,
+    pub period_end: i64,
     pub total_reminted: u32,
     pub winning_request: Option<Pubkey>,
     pub total_suggestion_count: u8,
@@ -53,8 +53,8 @@ pub enum DerugStatus {
 
 pub struct ActiveRequest {
     pub request: Pubkey,
-    pub vote_count: i32
-
+    pub vote_count: i32,
+    pub winning: bool
 }
 
 impl Eq for ActiveRequest {

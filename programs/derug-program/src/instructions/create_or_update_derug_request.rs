@@ -1,4 +1,3 @@
-use crate::constants::VOTING_TIME;
 use crate::errors::DerugError;
 use crate::state::derug_data::{ActiveRequest, DerugStatus};
 use crate::state::{Action, RequestStatus, UtilityData};
@@ -41,11 +40,7 @@ pub fn create_or_update_derug_request(
 
     if derug_data.derug_status == DerugStatus::Voting {
         require!(
-            derug_data
-                .voting_started_at
-                .checked_add(VOTING_TIME)
-                .unwrap()
-                > derug_request.created_at,
+            derug_data.period_end > derug_request.created_at,
             DerugError::TimeIsOut
         );
     }
@@ -66,7 +61,7 @@ pub fn create_or_update_derug_request(
         let new_len = derug_data
             .to_account_info()
             .data_len()
-            .checked_add(34)
+            .checked_add(37)
             .unwrap();
 
         transfer(
@@ -81,7 +76,7 @@ pub fn create_or_update_derug_request(
         )?;
 
         if derug_data.active_requests.len() == 0 {
-            derug_data.voting_started_at = Clock::get().unwrap().unix_timestamp;
+            derug_data.period_end = Clock::get().unwrap().unix_timestamp + 259200;
         }
 
         derug_data.to_account_info().realloc(new_len, false)?;
@@ -89,6 +84,7 @@ pub fn create_or_update_derug_request(
         derug_data.active_requests.push(ActiveRequest {
             request: derug_request.key(),
             vote_count: 0,
+            winning: false,
         });
     } else {
         let new_data_len = calculate_new_suggestion_data_len(&utility_dtos, derug_request);

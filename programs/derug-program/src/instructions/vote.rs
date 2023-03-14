@@ -1,7 +1,10 @@
 use crate::{
     constants::VOTE_RECORD_SEED,
     errors::DerugError,
-    state::{derug_data::DerugStatus, derug_request::RequestStatus},
+    state::{
+        derug_data::{self, DerugStatus},
+        derug_request::RequestStatus,
+    },
 };
 use anchor_lang::{
     prelude::*,
@@ -33,9 +36,8 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> 
     let remaining_accounts = ctx.remaining_accounts;
 
     let derug_request = &mut ctx.accounts.derug_request;
-    let derug_data = &mut ctx.accounts.derug_data;
     derug_request.request_status = RequestStatus::Voting;
-    derug_data.derug_status = DerugStatus::Voting;
+    ctx.accounts.derug_data.derug_status = DerugStatus::Voting;
 
     for (vote_record_info, nft_mint_info, nft_metadata_info, nft_token_account_info) in
         remaining_accounts.iter().tuples()
@@ -75,7 +77,8 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> 
 
         account_data.extend_from_slice(&VoteRecord::discriminator());
 
-        derug_data
+        ctx.accounts
+            .derug_data
             .active_requests
             .iter_mut()
             .find(|req| req.request == derug_request.key())
@@ -87,6 +90,45 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> 
         account_data.extend_from_slice(&vote_record);
 
         derug_request.vote_count = derug_request.vote_count.checked_add(1).unwrap();
+
+        //If more than % of NFTs voted, tip the request into succeeded,
+        //and only then will it be able to claim victory
+        // if derug_request.vote_count
+        //     > derug_data
+        //         .total_supply
+        //         .checked_div(derug_data.active_requests.len().try_into().unwrap())
+        //         .unwrap()
+        //     && derug_data.period_end < Clock::get().unwrap().unix_timestamp
+        // {
+
+        // }
+
+        let current_time = Clock::get().unwrap().unix_timestamp;
+
+        // if current_time > ctx.accounts.derug_data.period_end {
+        //     if let Some(winning_request) =
+        //         ctx.accounts
+        //             .derug_data
+        //             .active_requests
+        //             .iter_mut()
+        //             .find(|req| {
+        //                 req.vote_count
+        //                     > ctx
+        //                         .accounts
+        //                         .derug_data
+        //                         .total_supply
+        //                         .checked_div(
+        //                             ctx.accounts
+        //                                 .derug_data
+        //                                 .active_requests
+        //                                 .len()
+        //                                 .try_into()
+        //                                 .unwrap(),
+        //                         )
+        //                         .unwrap() as i32
+        //             })
+        //     {}
+        // }
 
         create_account(
             CpiContext::new_with_signer(
