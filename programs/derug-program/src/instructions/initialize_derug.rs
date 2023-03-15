@@ -1,5 +1,5 @@
 use crate::{
-    constants::{DERUG_DATA_SEED, METADATA_SEED},
+    constants::{DERUG_DATA_SEED, METADATA_SEED, VOTING_TIME},
     state::{DerugData, DerugStatus},
 };
 use anchor_lang::prelude::*;
@@ -31,6 +31,8 @@ pub fn initialize_derug(ctx: Context<InitializeDerug>, total_supply: u32) -> Res
     if *ctx.accounts.collection_key.to_account_info().owner == TOKEN_PROGRAM_ID {
         derug_data.collection_metadata = Some(ctx.accounts.collection_metadata.key());
     }
+
+    derug_data.period_end = Clock::get().unwrap().unix_timestamp + VOTING_TIME;
 
     derug_data.date_added = Clock::get().unwrap().unix_timestamp;
     derug_data.collection = ctx.accounts.collection_key.key();

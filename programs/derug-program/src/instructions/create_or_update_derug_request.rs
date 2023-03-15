@@ -1,5 +1,5 @@
 use crate::errors::DerugError;
-use crate::state::derug_data::{ActiveRequest, DerugStatus};
+use crate::state::derug_data::ActiveRequest;
 use crate::state::{Action, RequestStatus, UtilityData};
 use crate::utilities::calculate_new_suggestion_data_len;
 use crate::{
@@ -38,12 +38,11 @@ pub fn create_or_update_derug_request(
 
     derug_request.derugger = ctx.accounts.payer.key();
 
-    if derug_data.derug_status == DerugStatus::Voting {
-        require!(
-            derug_data.period_end > derug_request.created_at,
-            DerugError::TimeIsOut
-        );
-    }
+    require!(
+        derug_data.period_end > derug_request.created_at,
+        DerugError::TimeIsOut
+    );
+
     if derug_request.request_status == RequestStatus::Initialized {
         derug_data.total_suggestion_count =
             derug_data.total_suggestion_count.checked_add(1).unwrap();
@@ -74,10 +73,6 @@ pub fn create_or_update_derug_request(
             ),
             Rent::default().minimum_balance(new_len),
         )?;
-
-        if derug_data.active_requests.len() == 0 {
-            derug_data.period_end = Clock::get().unwrap().unix_timestamp + 259200;
-        }
 
         derug_data.to_account_info().realloc(new_len, false)?;
 
