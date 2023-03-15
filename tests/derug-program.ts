@@ -30,7 +30,7 @@ describe("derug-program", () => {
     const derugger = anchor.web3.Keypair.generate();
 
     const collectionKey = new anchor.web3.PublicKey(
-      "5igf61dzqeaNCq3DjygoNr84QUd4KGNQMQ6A5vdHGYTM"
+      "F7ehLXDAQqgWTQmxND3yEW6CxYMXh66PrM5g1DnMWjJ9"
     );
 
     await anchor
@@ -182,7 +182,7 @@ describe("derug-program", () => {
     //Vote
 
     const nftMint = new anchor.web3.PublicKey(
-      "4wHV9DgTrPh7nNU6LquYHYsT2u6iDBrMN47Cfrjh5e6R"
+      "6QjrgFXSgtV2yFF9y1Z6NeTTFtqxKNmnEizGEkqDfiJZ"
     );
 
     const [nftMetadata] = anchor.web3.PublicKey.findProgramAddressSync(
@@ -191,7 +191,7 @@ describe("derug-program", () => {
     );
 
     const nftTokenAccount = new anchor.web3.PublicKey(
-      "8CAjrv9CvvpfVCP4b8BQe14Wg3AuKQSC1sT3RsYpjNYr"
+      "54ZSkc3gFWySat9eYaN87kNVqXYFwnHbjyBEFjvAghcR"
     );
 
     const [voteRecord] = anchor.web3.PublicKey.findProgramAddressSync(
