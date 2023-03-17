@@ -28,7 +28,8 @@ pub struct RemintNft<'info> {
     #[account()]
     pub new_collection: Box<Account<'info, Mint>>,
     #[account()]
-    pub old_collection: Box<Account<'info, Mint>>,
+    ///CHECK
+    pub old_collection: UncheckedAccount<'info>,
     ///CHECK
     // #[account(mut, seeds=[PREFIX.as_ref(), METADATA_PROGRAM_ID.as_ref(), old_collection.key().as_ref()], bump,seeds::program = METADATA_PROGRAM_ID)]
     // pub old_collection_metadata: UncheckedAccount<'info>,

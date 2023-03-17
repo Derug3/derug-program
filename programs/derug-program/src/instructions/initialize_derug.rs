@@ -1,19 +1,19 @@
 use crate::{
-    constants::{DERUG_DATA_SEED, METADATA_SEED, VOTING_TIME},
+    constants::{DERUG_DATA_SEED, VOTING_TIME},
     state::{DerugData, DerugStatus},
 };
 use anchor_lang::prelude::*;
-use anchor_spl::token::Mint;
-use mpl_token_metadata::{state::Metadata, ID as METADATA_PROGRAM};
+use mpl_token_metadata::state::Metadata;
 use solana_program::borsh::try_from_slice_unchecked;
 use spl_token::ID as TOKEN_PROGRAM_ID;
 #[derive(Accounts)]
 pub struct InitializeDerug<'info> {
     #[account()]
-    pub collection_key: Box<Account<'info, Mint>>,
+    ///CHECK
+    pub collection_key: UncheckedAccount<'info>,
     #[account(init,payer=payer,seeds=[DERUG_DATA_SEED,collection_key.key().as_ref()], bump, space=DerugData::LEN)]
     pub derug_data: Box<Account<'info, DerugData>>,
-    #[account(seeds=[METADATA_SEED,METADATA_PROGRAM.as_ref(),collection_key.key().as_ref(),],bump,seeds::program=METADATA_PROGRAM)]
+    #[account()]
     ///CHECK
     pub collection_metadata: UncheckedAccount<'info>,
     #[account(mut)]
