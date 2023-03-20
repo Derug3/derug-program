@@ -34,9 +34,36 @@ pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
         DerugError::InvalidStatus
     );
 
-    derug_data.winning_request = Some(derug_request.key());
+    //Set the percentage
+    let mut threshold = derug_data
+        .total_supply
+        .checked_div(derug_data.active_requests.len().try_into().unwrap())
+        .unwrap();
+
+    //In these extreme cases set an artificial percentage
+    if derug_data.active_requests.len() as u8 == 1 {
+        threshold = derug_data.total_supply.checked_div(2).unwrap();
+    } else if derug_data.active_requests.len() as u8 > 5 {
+        threshold = derug_data.total_supply.checked_div(5).unwrap()
+    }
 
     derug_data.active_requests.sort();
+
+    let first_request = derug_data.active_requests.get_mut(0).unwrap();
+
+    require!(
+        first_request.request == derug_request.key(),
+        DerugError::NoWinner
+    );
+
+    require!(
+        first_request.vote_count > threshold.try_into().unwrap(),
+        DerugError::NoWinner
+    );
+
+    first_request.winning = true;
+
+    derug_data.winning_request = Some(derug_request.key());
     let active_requests = derug_data
         .active_requests
         .iter()

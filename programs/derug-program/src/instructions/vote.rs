@@ -88,41 +88,6 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> 
 
         derug_request.vote_count = derug_request.vote_count.checked_add(1).unwrap();
 
-        //Set the percentage
-        let mut threshold = ctx
-            .accounts
-            .derug_data
-            .total_supply
-            .checked_div(
-                ctx.accounts
-                    .derug_data
-                    .active_requests
-                    .len()
-                    .try_into()
-                    .unwrap(),
-            )
-            .unwrap();
-
-        //In these extreme cases set an artificial percentage
-        if ctx.accounts.derug_data.active_requests.len() as u8 == 1 {
-            threshold = ctx.accounts.derug_data.total_supply.checked_div(2).unwrap();
-        } else if ctx.accounts.derug_data.active_requests.len() as u8 > 5 {
-            threshold = ctx.accounts.derug_data.total_supply.checked_div(5).unwrap()
-        }
-
-        //Set this to true if he passed the threshold
-        if derug_request.vote_count > threshold {
-            if let Some(winning_request) = ctx
-                .accounts
-                .derug_data
-                .active_requests
-                .iter_mut()
-                .find(|request| request.request == derug_request.key())
-            {
-                winning_request.winning = true;
-            }
-        }
-
         create_account(
             CpiContext::new_with_signer(
                 ctx.accounts.system_program.to_account_info(),
