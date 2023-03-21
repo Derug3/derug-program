@@ -26,7 +26,7 @@ pub struct DerugData {
 
 impl DerugData {
     pub const LEN: usize = 
-    32       //Max slug length   
+    64       //Max slug length   
     +2 * 32  //First two pubkeys
     +33  //Optional collection metadata account
     + 4 //total amount of nfts in rugged collection 
@@ -69,13 +69,25 @@ impl Eq for ActiveRequest {
 
 impl Ord for ActiveRequest {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-       if self.vote_count > other.vote_count {
+       if self.vote_count >= other.vote_count {
             Ordering::Greater
-       } else if self.vote_count < other.vote_count {
+       } else  {
             Ordering::Less
-       } else {
-            Ordering::Equal
-       }
+       } 
 
+    }
+}
+
+impl ActiveRequest{
+    pub fn get_winning(derug_data:&DerugData)->&Self{
+
+        let  mut winning_request=derug_data.active_requests.get(0).unwrap();
+
+        for request in derug_data.active_requests.iter(){
+            if request.vote_count>winning_request.vote_count{
+               winning_request=request;
+            }
+        }
+        winning_request
     }
 }

@@ -1,3 +1,5 @@
+use std::ops::DerefMut;
+
 use crate::{
     constants::VOTE_RECORD_SEED,
     errors::DerugError,
@@ -5,7 +7,7 @@ use crate::{
 };
 use anchor_lang::{
     prelude::*,
-    system_program::{create_account, CreateAccount},
+    system_program::{create_account, transfer, CreateAccount, Transfer},
     Discriminator,
 };
 use anchor_spl::token::{Mint, TokenAccount};
@@ -24,6 +26,9 @@ pub struct Vote<'info> {
     pub derug_request: Box<Account<'info, DerugRequest>>,
     #[account(mut, seeds =[DERUG_DATA_SEED, derug_data.collection.key().as_ref()], bump)]
     pub derug_data: Box<Account<'info, DerugData>>,
+    ///CHECK
+    #[account(mut, address="DRG3YRmurqpWQ1jEjK8DiWMuqPX9yL32LXLbuRdoiQwt".parse::<Pubkey>().unwrap())]
+    pub fee_wallet: AccountInfo<'info>,
     #[account(mut)]
     pub payer: Signer<'info>,
     pub system_program: Program<'info, System>,
@@ -82,11 +87,8 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> 
             .unwrap()
             .vote_count += 1;
 
-        let vote_record = VoteRecord { voted: true }.try_to_vec().unwrap();
-        // vote_record
-        account_data.extend_from_slice(&vote_record);
-
-        derug_request.vote_count = derug_request.vote_count.checked_add(1).unwrap();
+        let vote_record = VoteRecord { voted: true };
+        let vote_record_length = 8 + vote_record.try_to_vec()?.len();
 
         create_account(
             CpiContext::new_with_signer(
@@ -102,15 +104,25 @@ pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> 
                     &[vote_record_bump],
                 ]],
             ),
-            Rent::default().minimum_balance(account_data.len()),
-            account_data.len() as u64,
+            Rent::default().minimum_balance(vote_record_length),
+            vote_record_length as u64,
             ctx.program_id,
         )?;
 
-        vote_record_info
-            .data
-            .borrow_mut()
-            .copy_from_slice(&account_data);
+        transfer(
+            CpiContext::new(
+                ctx.accounts.system_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.payer.to_account_info(),
+                    to: ctx.accounts.fee_wallet.to_account_info(),
+                },
+            ),
+            9000000,
+        )?;
+
+        derug_request.vote_count = derug_request.vote_count.checked_add(1).unwrap();
+
+        vote_record.try_serialize(vote_record_info.try_borrow_mut_data()?.deref_mut())?;
     }
 
     Ok(())

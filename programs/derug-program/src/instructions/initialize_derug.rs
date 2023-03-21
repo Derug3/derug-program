@@ -39,7 +39,7 @@ pub fn initialize_derug(
 
     derug_data.period_end = Clock::get().unwrap().unix_timestamp + VOTING_TIME;
 
-    derug_data.date_added = Clock::get().unwrap().unix_timestamp;
+    derug_data.date_added = Clock::get()?.unix_timestamp;
     derug_data.collection = ctx.accounts.collection_key.key();
     derug_data.rug_update_authority = collection_metadata.update_authority;
     derug_data.collection_name = collection_metadata.data.name;

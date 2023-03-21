@@ -20,6 +20,9 @@ pub struct CreateOrUpdateDerugRequest<'info> {
     pub derug_data: Box<Account<'info, DerugData>>,
     #[account(mut)]
     pub payer: Signer<'info>,
+    ///CHECK
+    #[account(mut, address="DRG3YRmurqpWQ1jEjK8DiWMuqPX9yL32LXLbuRdoiQwt".parse::<Pubkey>().unwrap())]
+    pub fee_wallet: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
 }
 
@@ -122,6 +125,17 @@ pub fn create_or_update_derug_request(
     }
     derug_request.vote_count = 0;
     derug_request.derug_data = ctx.accounts.derug_data.key();
+
+    transfer(
+        CpiContext::new(
+            ctx.accounts.system_program.to_account_info(),
+            Transfer {
+                from: ctx.accounts.payer.to_account_info(),
+                to: ctx.accounts.fee_wallet.to_account_info(),
+            },
+        ),
+        9000000,
+    )?;
 
     Ok(())
 }
