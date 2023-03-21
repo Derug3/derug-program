@@ -1,6 +1,7 @@
 use crate::{
     constants::{DERUG_DATA_SEED, VOTING_TIME},
     state::{DerugData, DerugStatus},
+    utilities::calculate_theshold_denominator,
 };
 use anchor_lang::prelude::*;
 use mpl_token_metadata::state::Metadata;
@@ -21,7 +22,11 @@ pub struct InitializeDerug<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn initialize_derug(ctx: Context<InitializeDerug>, total_supply: u32) -> Result<()> {
+pub fn initialize_derug(
+    ctx: Context<InitializeDerug>,
+    total_supply: u32,
+    slug: String,
+) -> Result<()> {
     let collection_metadata =
         try_from_slice_unchecked::<Metadata>(&ctx.accounts.collection_metadata.data.borrow())
             .expect("Invalid collection metadata ");
@@ -44,6 +49,8 @@ pub fn initialize_derug(ctx: Context<InitializeDerug>, total_supply: u32) -> Res
     derug_data.total_supply = total_supply;
     derug_data.total_suggestion_count = 0;
     derug_data.total_reminted = 0;
+    derug_data.slug = slug;
+    derug_data.threshold_denominator = calculate_theshold_denominator(total_supply);
 
     Ok(())
 }

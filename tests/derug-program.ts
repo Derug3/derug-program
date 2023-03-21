@@ -81,7 +81,7 @@ describe("derug-program", () => {
     );
 
     await program.methods
-      .initializeDerug(100)
+      .initializeDerug(100, "solana_monkey_business")
       .accounts({
         collectionKey,
         collectionMetadata,
@@ -98,7 +98,8 @@ describe("derug-program", () => {
       "Not initialized"
     );
 
-    console.log("DERUG INITIALIZED");
+    const derugAcc = await program.account.derugData.fetch(derugData);
+    console.log(derugAcc);
 
     //Create derug request
 

@@ -12,8 +12,12 @@ declare_id!("4SR5BgvBSiZeYDxyDhSYxiiZBvGJtexYnALsVs7ouYyf");
 pub mod derug_program {
     use super::*;
 
-    pub fn initialize_derug(ctx: Context<InitializeDerug>, total_supply: u32) -> Result<()> {
-        instructions::initialize_derug(ctx, total_supply)
+    pub fn initialize_derug(
+        ctx: Context<InitializeDerug>,
+        total_supply: u32,
+        slug: String,
+    ) -> Result<()> {
+        instructions::initialize_derug(ctx, total_supply, slug)
     }
 
     pub fn create_or_update_derug_request(

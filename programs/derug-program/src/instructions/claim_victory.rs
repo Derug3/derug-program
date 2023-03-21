@@ -35,17 +35,10 @@ pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
     );
 
     //Set the percentage
-    let mut threshold = derug_data
+    let threshold = derug_data
         .total_supply
-        .checked_div(derug_data.active_requests.len().try_into().unwrap())
+        .checked_div(derug_data.threshold_denominator as u32)
         .unwrap();
-
-    //In these extreme cases set an artificial percentage
-    if derug_data.active_requests.len() as u8 == 1 {
-        threshold = derug_data.total_supply.checked_div(2).unwrap();
-    } else if derug_data.active_requests.len() as u8 > 5 {
-        threshold = derug_data.total_supply.checked_div(5).unwrap()
-    }
 
     derug_data.active_requests.sort();
 
