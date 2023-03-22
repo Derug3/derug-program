@@ -123,20 +123,3 @@ pub fn create_master_edition_ix(
         Some(0),
     )
 }
-
-pub fn calculate_theshold_denominator(total_supply: u32) -> u8 {
-    match total_supply.cmp(&1000_u32) {
-        Ordering::Equal | Ordering::Less => {
-            return 4;
-        }
-        Ordering::Greater => match total_supply.cmp(&3000) {
-            Ordering::Equal | Ordering::Less => {
-                return 6;
-            }
-            Ordering::Greater => match total_supply.cmp(&5000) {
-                Ordering::Equal | Ordering::Less => return 4,
-                Ordering::Greater => return 10,
-            },
-        },
-    }
-}

@@ -1,7 +1,6 @@
 use crate::{
     constants::{DERUG_DATA_SEED, VOTING_TIME},
     state::{DerugData, DerugStatus},
-    utilities::calculate_theshold_denominator,
 };
 use anchor_lang::prelude::*;
 use mpl_token_metadata::state::Metadata;
@@ -50,7 +49,7 @@ pub fn initialize_derug(
     derug_data.total_suggestion_count = 0;
     derug_data.total_reminted = 0;
     derug_data.slug = slug;
-    derug_data.threshold_denominator = calculate_theshold_denominator(total_supply);
+    derug_data.threshold_denominator = 10;
 
     Ok(())
 }
