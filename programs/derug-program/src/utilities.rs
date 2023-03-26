@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, vec};
+use std::vec;
 
 use crate::state::{AccountLen, Action, UpdateUtilityDataDto, FIXED_LEN};
 use anchor_lang::prelude::*;
