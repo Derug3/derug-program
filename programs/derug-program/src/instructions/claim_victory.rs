@@ -68,6 +68,7 @@ pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
     }
 
     remint_config.seller_fee_bps = derug_request.seller_fee_bps;
+    remint_config.mint_currency = derug_request.mint_currency;
 
     //Set the percentage
     let threshold = derug_data

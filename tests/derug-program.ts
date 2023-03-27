@@ -4,16 +4,24 @@ import { assert } from "chai";
 import { DerugProgram } from "../target/types/derug_program";
 import updateAuthorityWallet from "../wallet/keypair.json";
 import feeWalletKeypair from "../tests/wallet/fees.json";
-import { Metaplex } from "@metaplex-foundation/js";
+import {
+  keypairIdentity,
+  Metaplex,
+  sol,
+  toBigNumber,
+  toDateTime,
+  token,
+} from "@metaplex-foundation/js";
 import {
   AccountLayout,
   getMinimumBalanceForRentExemptAccount,
+  getOrCreateAssociatedTokenAccount,
   MintLayout,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { Metadata } from "@metaplex-foundation/mpl-token-metadata";
 import { BN } from "bn.js";
-import { AccountMeta, Keypair, PublicKey } from "@solana/web3.js";
+import { AccountMeta, Connection, Keypair, PublicKey } from "@solana/web3.js";
 
 describe("derug-program", () => {
   // Configure the client to use the local cluster.
@@ -39,8 +47,6 @@ describe("derug-program", () => {
 
     const derugger0 = anchor.web3.Keypair.generate();
     const derugger = anchor.web3.Keypair.generate();
-
-    console.log(derugger.publicKey.toString());
 
     const collectionKey = new anchor.web3.PublicKey(
       "2hxtFTNNULe3YcULVS9WaNgtoZkxMbhyS6Nb9fecMku3"
@@ -189,11 +195,19 @@ describe("derug-program", () => {
       },
     };
 
+    const mintCurrencyRemAcc: AccountMeta[] = [
+      {
+        isSigner: false,
+        isWritable: false,
+        pubkey: new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"),
+      },
+    ];
+
     await program.methods
       .createOrUpdateDerugRequest(
         [utilityDto0],
         500,
-        new BN(14000),
+        new BN(1),
         new BN(7 * 3600 + 1),
         "DERUG COLL",
         "DRG"
@@ -206,6 +220,7 @@ describe("derug-program", () => {
         feeWallet,
       })
       .signers([derugger])
+      .remainingAccounts(mintCurrencyRemAcc)
       .rpc();
 
     console.log("DERUG REQUEST CREATED");
@@ -298,6 +313,11 @@ describe("derug-program", () => {
         isSigner: false,
         isWritable: false,
         pubkey: candyMachine.publicKey,
+      },
+      {
+        isSigner: false,
+        isWritable: false,
+        pubkey: new PublicKey("4xmPwMQzLTGyefmFPjbFeYqfSWwZrtpBAMEC8ga9ubwV"),
       },
     ];
 
@@ -636,7 +656,88 @@ describe("derug-program", () => {
           newNftMintKeypair.publicKey.toString()
       )
     );
+    const publicMintNfts: PublicKey[] = [
+      new PublicKey("4RRkgeoLdbskNrTzQxx23Li4eWeahc3DzN8gmSSjKBgX"),
+      new PublicKey("7K8MJW2BJDFuuckpWimh6W9PGGh6HJPmSKMH13rjPmL2"),
+      new PublicKey("2973mQSn8ywhXn5swZ9xTWPp1xuygwjWjLijhL7qRYTW"),
+    ];
+    const uris: string[] = [];
+    const MAINNET_CONNECTION = new Connection("https://rpc.ankr.com/solana");
 
-    console.log("UPDATED METADATA ACCOUNT");
+    for (const mint of publicMintNfts) {
+      uris.push(
+        (
+          await Metadata.fromAccountAddress(
+            MAINNET_CONNECTION,
+            mpx.nfts().pdas().metadata({ mint: mint })
+          )
+        ).data.uri.split("\\")[0]
+      );
+    }
+    const remintConfigAccount = await program.account.remintConfig.fetch(
+      remintConfig
+    );
+
+    mpx.use(keypairIdentity(derugger));
+    try {
+      const deruggerUsdcTa = await getOrCreateAssociatedTokenAccount(
+        anchor.getProvider().connection,
+        derugger,
+        new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"),
+        derugger.publicKey
+      );
+      await mpx.candyMachinesV2().create({
+        itemsAvailable: toBigNumber(3),
+
+        price: token(remintConfigAccount.publicMintPrice.toNumber(), 6, "USDC"),
+        sellerFeeBasisPoints: 500,
+        candyMachine,
+        collection: newCollectionMint.publicKey,
+        goLiveDate: toDateTime(new Date()),
+        symbol: "DRG",
+        creators: [{ address: derugger.publicKey, share: 100, verified: true }],
+        tokenMint: new PublicKey(
+          "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
+        ),
+        wallet: deruggerUsdcTa.address,
+      });
+    } catch (error) {
+      console.log(error);
+    }
+
+    const insert = await mpx.candyMachinesV2().insertItems({
+      candyMachine: {
+        address: candyMachine.publicKey,
+        itemsAvailable: toBigNumber(5),
+        itemsLoaded: toBigNumber(0),
+      },
+      items: uris.map((uri, index) => {
+        return {
+          name: "#000" + +(index + 2),
+          uri,
+        };
+      }),
+    });
+    try {
+      let candyMacineAccount = await mpx.candyMachinesV2().findByAddress({
+        address: candyMachine.publicKey,
+      });
+
+      console.log(candyMacineAccount);
+
+      mpx.use(keypairIdentity(rugger));
+      await mpx.candyMachinesV2().mint({
+        candyMachine: candyMacineAccount,
+      });
+      candyMacineAccount = await mpx.candyMachinesV2().findByAddress({
+        address: candyMachine.publicKey,
+      });
+      mpx.use(keypairIdentity(rugger));
+      await mpx.candyMachinesV2().mint({
+        candyMachine: candyMacineAccount,
+      });
+    } catch (error) {
+      console.log(error);
+    }
   });
 });

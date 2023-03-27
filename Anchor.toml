@@ -48,3 +48,7 @@ address="4xmPwMQzLTGyefmFPjbFeYqfSWwZrtpBAMEC8ga9ubwV"
 #Devnet USDC mint
 [[test.validator.clone]]
 address="4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
+
+[[test.genesis]]
+address="cndy3Z4yapfJBmL3ShUp5exZKqR3z33thTzeNMm2gRZ"
+program="./tests/fixtures/candyMachine.so"
