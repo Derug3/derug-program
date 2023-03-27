@@ -1,15 +1,12 @@
 use crate::{
-    constants::{AUTHORITY_SEED, DERUG_DATA_SEED},
+    constants::{AUTHORITY_SEED, DERUG_DATA_SEED, REMINT_CONFIG_SEED},
     errors::DerugError,
     state::{
         derug_data::{DerugData, DerugStatus},
-        derug_request::{DerugRequest, RequestStatus},
+        derug_request::{DerugRequest, NftRemintedEvent, RemintConfig, RequestStatus},
     },
 };
-use anchor_lang::{
-    prelude::*,
-    system_program::{transfer, Transfer},
-};
+use anchor_lang::{prelude::*, system_program::transfer};
 use anchor_spl::token::{
     initialize_account, initialize_mint, mint_to, InitializeAccount, InitializeMint, Mint, MintTo,
     Token, TokenAccount,
@@ -54,6 +51,13 @@ pub struct RemintNft<'info> {
     ///CHECK
     #[account(mut, seeds=[PREFIX.as_ref(), METADATA_PROGRAM_ID.as_ref(), new_mint.key().as_ref()], bump,seeds::program = METADATA_PROGRAM_ID)]
     pub new_metadata: UncheckedAccount<'info>,
+
+    #[account(seeds=[REMINT_CONFIG_SEED,derug_data.key().as_ref()],bump)]
+    pub remint_config: Account<'info, RemintConfig>,
+
+    #[account(address=derug_request.derugger)]
+    ///CHECK: address checked
+    pub derug_authority: UncheckedAccount<'info>,
 
     ///CHECK
     #[account(mut, seeds=[PREFIX.as_ref(), METADATA_PROGRAM_ID.as_ref(), old_mint.key().as_ref(), EDITION.as_ref()],bump, seeds::program = METADATA_PROGRAM_ID)]
@@ -187,6 +191,14 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         1,
     )?;
 
+    let derug_request = &ctx.accounts.derug_request;
+
+    let formated_name = format!(
+        "{} #{}",
+        derug_request.new_name.to_uppercase(),
+        ctx.accounts.derug_data.total_reminted + 1
+    );
+
     let create_metadata = create_metadata_accounts_v3(
         ctx.accounts.metadata_program.key(),
         ctx.accounts.new_metadata.key(),
@@ -194,8 +206,8 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         ctx.accounts.payer.key(),
         ctx.accounts.payer.key(),
         ctx.accounts.pda_authority.key(),
-        old_metadata_account.data.name,
-        old_metadata_account.data.symbol,
+        formated_name,
+        derug_request.new_symbol.clone(),
         old_metadata_account.data.uri,
         Some(vec![Creator {
             address: ctx.accounts.derug_request.derugger,
@@ -265,7 +277,7 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
     transfer(
         CpiContext::new(
             ctx.accounts.system_program.to_account_info(),
-            Transfer {
+            anchor_lang::system_program::Transfer {
                 from: ctx.accounts.payer.to_account_info(),
                 to: ctx.accounts.fee_wallet.to_account_info(),
             },
@@ -279,6 +291,14 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         .total_reminted
         .checked_add(1)
         .unwrap();
+
+    emit!(NftRemintedEvent {
+        reminter: ctx.accounts.payer.key(),
+        new_nft_mint: ctx.accounts.new_mint.key(),
+        old_nft_mint: ctx.accounts.old_mint.key(),
+        new_nft_metadata: ctx.accounts.new_metadata.key(),
+        old_nft_metadata: ctx.accounts.old_metadata.key()
+    });
 
     Ok(())
 }

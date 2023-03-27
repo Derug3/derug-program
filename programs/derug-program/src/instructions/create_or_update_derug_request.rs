@@ -9,6 +9,7 @@ use crate::{
 };
 use anchor_lang::prelude::*;
 use anchor_lang::system_program::{transfer, Transfer};
+use anchor_spl::token::Mint;
 use itertools::Itertools;
 
 #[derive(Accounts)]
@@ -29,6 +30,11 @@ pub struct CreateOrUpdateDerugRequest<'info> {
 pub fn create_or_update_derug_request(
     ctx: Context<CreateOrUpdateDerugRequest>,
     utility_dtos: Vec<UpdateUtilityDataDto>,
+    new_name: String,
+    new_symbol: String,
+    seller_fee_bps: u8,
+    public_mint_price: Option<u64>,
+    private_mint_duration: Option<i64>,
 ) -> Result<()> {
     let derug_request = &mut ctx.accounts.derug_request;
     let derug_data = &mut ctx.accounts.derug_data;
@@ -38,6 +44,9 @@ pub fn create_or_update_derug_request(
         ctx.accounts.payer.key() != derug_data.rug_update_authority,
         DerugError::RuggerSigner
     );
+
+    derug_request.new_name = new_name;
+    derug_request.new_symbol = new_symbol;
 
     derug_request.derugger = ctx.accounts.payer.key();
 
@@ -123,8 +132,17 @@ pub fn create_or_update_derug_request(
             });
         }
     }
+    let remaining_accounts = &mut ctx.remaining_accounts.iter();
+    if let Some(mint_currency) = remaining_accounts.next() {
+        let _mint = Account::<Mint>::try_from(mint_currency).unwrap();
+
+        derug_request.mint_currency = Some(mint_currency.key());
+    }
     derug_request.vote_count = 0;
     derug_request.derug_data = ctx.accounts.derug_data.key();
+    derug_request.private_mint_duration = private_mint_duration;
+    derug_request.mint_price = public_mint_price;
+    derug_request.seller_fee_bps = seller_fee_bps;
 
     transfer(
         CpiContext::new(

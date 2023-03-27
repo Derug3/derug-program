@@ -23,8 +23,21 @@ pub mod derug_program {
     pub fn create_or_update_derug_request(
         ctx: Context<CreateOrUpdateDerugRequest>,
         utility_dtos: Vec<UpdateUtilityDataDto>,
+        seller_fee_bps: u8,
+        public_mint_price: Option<u64>,
+        private_mint_duration: Option<i64>,
+        new_name: String,
+        new_symbol: String,
     ) -> Result<()> {
-        instructions::create_or_update_derug_request(ctx, utility_dtos)
+        instructions::create_or_update_derug_request(
+            ctx,
+            utility_dtos,
+            new_name,
+            new_symbol,
+            seller_fee_bps,
+            public_mint_price,
+            private_mint_duration,
+        )
     }
 
     pub fn vote<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, Vote<'info>>) -> Result<()> {

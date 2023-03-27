@@ -50,6 +50,7 @@ pub enum DerugStatus {
     Voting,
     Succeeded,
     Reminting,
+    PublicMint,
     Completed,
 }
 

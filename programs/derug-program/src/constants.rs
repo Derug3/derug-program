@@ -3,6 +3,7 @@ pub const METADATA_SEED: &[u8] = b"metadata";
 pub const EDITION_SEED: &[u8] = b"edition";
 pub const DERUG_DATA_SEED: &[u8] = b"derug-data";
 pub const VOTE_RECORD_SEED: &[u8] = b"vote-record";
+pub const REMINT_CONFIG_SEED: &[u8] = b"remint-config";
 pub const TOKEN_SEED: &[u8] = b"token";
 pub const MINT_SEED: &[u8] = b"mint";
 pub const AUTHORITY_SEED: &[u8] = b"authority";

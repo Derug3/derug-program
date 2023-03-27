@@ -43,4 +43,13 @@ pub enum DerugError {
 
     #[msg("Wrong collection sent ")]
     WrongCollection,
+
+    #[msg("Invalid seller fee basis points amount")]
+    InvalidSellerFeeBps,
+
+    #[msg("Invalid mint currency")]
+    InvalidMintCurrency,
+
+    #[msg("Invalid token owner")]
+    InvalidTokenOwner,
 }

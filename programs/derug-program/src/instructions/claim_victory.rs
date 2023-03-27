@@ -1,15 +1,18 @@
+use std::mem::size_of;
+
 use anchor_lang::{
     prelude::*,
     system_program::{transfer, Transfer},
 };
+use anchor_spl::token::TokenAccount;
 use itertools::Itertools;
 
 use crate::{
-    constants::DERUG_DATA_SEED,
+    constants::{DERUG_DATA_SEED, REMINT_CONFIG_SEED},
     errors::DerugError,
     state::{
         derug_data::{ActiveRequest, DerugData, DerugStatus},
-        derug_request::{DerugRequest, RequestStatus},
+        derug_request::{DerugRequest, RemintConfig, RequestStatus},
     },
 };
 
@@ -21,6 +24,8 @@ pub struct ClaimVictory<'info> {
     pub derug_data: Box<Account<'info, DerugData>>,
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(init,seeds=[REMINT_CONFIG_SEED,derug_data.key().as_ref()],payer=payer,bump,space=size_of::<RemintConfig>())]
+    pub remint_config: Account<'info, RemintConfig>,
     ///CHECK
     #[account(mut, address="DRG3YRmurqpWQ1jEjK8DiWMuqPX9yL32LXLbuRdoiQwt".parse::<Pubkey>().unwrap())]
     pub fee_wallet: AccountInfo<'info>,
@@ -34,10 +39,35 @@ pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
         ctx.accounts.payer.key() == derug_request.derugger.key(),
         DerugError::WrongDerugger
     );
+
     require!(
         Clock::get().unwrap().unix_timestamp > derug_data.period_end,
         DerugError::InvalidStatus
     );
+
+    let remint_config = &mut ctx.accounts.remint_config;
+
+    remint_config.authority = ctx.accounts.payer.key();
+
+    let remaining_accounts = &mut ctx.remaining_accounts.iter();
+
+    let candy_machine = remaining_accounts.next().unwrap();
+
+    remint_config.candy_machine_key = candy_machine.key();
+
+    remint_config.public_mint_price = derug_request.mint_price;
+
+    if let Some(private_mint_end) = derug_request.private_mint_duration {
+        remint_config.private_mint_end = Some(
+            Clock::get()
+                .unwrap()
+                .unix_timestamp
+                .checked_add(private_mint_end)
+                .unwrap(),
+        );
+    }
+
+    remint_config.seller_fee_bps = derug_request.seller_fee_bps;
 
     //Set the percentage
     let threshold = derug_data
@@ -90,6 +120,16 @@ pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
 
     derug_data.derug_status = DerugStatus::Succeeded;
     derug_request.request_status = RequestStatus::Succeeded;
+
+    if let Some(mint_currency) = derug_request.mint_currency {
+        let token_info = remaining_accounts.next().unwrap();
+        let token = Account::<TokenAccount>::try_from(token_info).unwrap();
+        require!(
+            token.mint == mint_currency,
+            DerugError::InvalidTokenAccountMint
+        );
+        remint_config.mint_currency = Some(mint_currency);
+    }
 
     transfer(
         CpiContext::new(

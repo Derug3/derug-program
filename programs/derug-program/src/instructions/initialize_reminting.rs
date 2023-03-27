@@ -1,9 +1,9 @@
 use crate::{
-    constants::{AUTHORITY_SEED, DERUG_DATA_SEED},
+    constants::{AUTHORITY_SEED, DERUG_DATA_SEED, REMINT_CONFIG_SEED},
     errors::DerugError,
     state::{
         derug_data::{DerugData, DerugStatus},
-        derug_request::{DerugRequest, RequestStatus},
+        derug_request::{DerugRequest, RemintConfig, RequestStatus},
     },
 };
 use anchor_lang::{
@@ -45,6 +45,8 @@ pub struct InitializeReminting<'info> {
     #[account(seeds=[DERUG_DATA_SEED,derug_request.key().as_ref(),AUTHORITY_SEED],bump)]
     ///CHECK
     pub pda_authority: UncheckedAccount<'info>,
+    #[account(mut,seeds=[REMINT_CONFIG_SEED,derug_data.key().as_ref()],bump)]
+    pub remint_config: Account<'info, RemintConfig>,
 
     #[account(mut)]
     ///CHECK
@@ -73,6 +75,8 @@ pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
         ctx.accounts.derug_request.request_status == RequestStatus::Succeeded,
         DerugError::NoWinner
     );
+
+    ctx.accounts.remint_config.collection = ctx.accounts.new_collection.key();
 
     anchor_lang::system_program::transfer(
         CpiContext::new(
@@ -139,8 +143,8 @@ pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
         ctx.accounts.payer.key(),
         ctx.accounts.payer.key(),
         ctx.accounts.payer.key(),
-        ctx.accounts.derug_data.collection_name.clone(),
-        ctx.accounts.derug_data.collection_symbol.clone(),
+        ctx.accounts.derug_request.new_name.clone(),
+        ctx.accounts.derug_request.new_symbol.clone(),
         ctx.accounts.derug_data.collection_uri.clone(),
         Some(vec![Creator {
             address: ctx.accounts.payer.key(),
