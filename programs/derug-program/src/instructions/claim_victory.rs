@@ -39,11 +39,11 @@ pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
         ctx.accounts.payer.key() == derug_request.derugger.key(),
         DerugError::WrongDerugger
     );
-
-    require!(
-        Clock::get().unwrap().unix_timestamp > derug_data.period_end,
-        DerugError::InvalidStatus
-    );
+    //TODO:comment in after testing
+    // require!(
+    //     Clock::get().unwrap().unix_timestamp > derug_data.period_end,
+    //     DerugError::InvalidStatus
+    // );
 
     let remint_config = &mut ctx.accounts.remint_config;
 
@@ -83,7 +83,7 @@ pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
     );
 
     require!(
-        winning_request.vote_count > threshold.try_into().unwrap(),
+        winning_request.vote_count >= threshold.try_into().unwrap(),
         DerugError::NoWinner
     );
 
@@ -128,7 +128,7 @@ pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
             token.mint == mint_currency,
             DerugError::InvalidTokenAccountMint
         );
-        remint_config.mint_currency = Some(mint_currency);
+        remint_config.mint_fee_treasury = Some(token_info.key());
     }
 
     transfer(

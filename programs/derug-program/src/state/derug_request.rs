@@ -11,7 +11,7 @@ pub struct DerugRequest {
     pub mint_price: Option<u64>,
     pub mint_currency: Option<Pubkey>,
     pub private_mint_duration: Option<i64>,
-    pub seller_fee_bps: u8,
+    pub seller_fee_bps: u32,
     pub utility_data: Vec<UtilityData>,
 }
 
@@ -24,7 +24,7 @@ pub struct RemintConfig {
     pub mint_fee_treasury: Option<Pubkey>,
     pub private_mint_end: Option<i64>,
     pub candy_machine_key: Pubkey,
-    pub seller_fee_bps: u8,
+    pub seller_fee_bps: u32,
 }
 
 pub const FIXED_LEN: usize = 32 + 10 + 32 + 32 + 8 + 4 + 1 + 9 + 33 + 9 + 1 + 12;

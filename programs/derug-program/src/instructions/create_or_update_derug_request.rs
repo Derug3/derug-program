@@ -32,7 +32,7 @@ pub fn create_or_update_derug_request(
     utility_dtos: Vec<UpdateUtilityDataDto>,
     new_name: String,
     new_symbol: String,
-    seller_fee_bps: u8,
+    seller_fee_bps: u32,
     public_mint_price: Option<u64>,
     private_mint_duration: Option<i64>,
 ) -> Result<()> {

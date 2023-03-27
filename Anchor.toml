@@ -2,7 +2,7 @@
 seeds = false
 skip-lint = false
 [programs.localnet]
-derug_program = "4SR5BgvBSiZeYDxyDhSYxiiZBvGJtexYnALsVs7ouYyf"
+derug_program = "8spRpt6yfwWjE8BAyR9jX1xFkVLjQcmijVha6hqQPVMU"
 
 
 
@@ -19,23 +19,32 @@ url="https://api.devnet.solana.com"
 
 #NFT MINT
 [[test.validator.clone]]
-address = '6QjrgFXSgtV2yFF9y1Z6NeTTFtqxKNmnEizGEkqDfiJZ'
+address = '884Rqxkc4fS6zEAHMfwhTNFcda7Tzp3yRXp9Cq3s3sfx'
 # #NFT Metadata
 [[test.validator.clone]]
-address = 'wSekCuzodeddgMBUSBUNHJ5gyU9S8Bn2Rj8eQkUdjwf'
+address = '8wd9jJoygdV2wKis8iu61SYWTQ4ePEKEhBkF57jsHa8'
 #NFT Token Account
 [[test.validator.clone]]
-address = '54ZSkc3gFWySat9eYaN87kNVqXYFwnHbjyBEFjvAghcR'
+address = '7GL1fEXnFmfJFUEqeH8ekPT9VtZZHFicYr8SLb6WFvD7'
 #Collection
 [[test.validator.clone]]
-address = 'F7ehLXDAQqgWTQmxND3yEW6CxYMXh66PrM5g1DnMWjJ9'
+address = '2hxtFTNNULe3YcULVS9WaNgtoZkxMbhyS6Nb9fecMku3'
 #Collection metadata
 [[test.validator.clone]]
-address = '78eAykHyAgGokW34YXZ8aq5xFKroFtEdVMAsCyPF84hJ'
+address = 'CmyGoAVDqSJPKfrQqu1TuQnf3PD8oAhB4edqxkDnMoqf'
 # #Old nft master edition
 [[test.validator.clone]]
-address = '4LPPx9KmPj1DCDQF2mCoXUADhQXoTzvErnerrCRwkmCn'
+address = 'J9FTpV7M9bX9gQujSkQBPPgQuHj9QRPqggm7VVu3XPus'
 
 [[test.genesis]]
 address="metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
 program="./tests/fixtures/mpl_token_metadata.so"
+
+
+#Devnet USDC token account
+[[test.validator.clone]]
+address="4xmPwMQzLTGyefmFPjbFeYqfSWwZrtpBAMEC8ga9ubwV"
+
+#Devnet USDC mint
+[[test.validator.clone]]
+address="4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"

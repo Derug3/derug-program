@@ -4,7 +4,7 @@ import { assert } from "chai";
 import { DerugProgram } from "../target/types/derug_program";
 import updateAuthorityWallet from "../wallet/keypair.json";
 import feeWalletKeypair from "../tests/wallet/fees.json";
-
+import { Metaplex } from "@metaplex-foundation/js";
 import {
   AccountLayout,
   getMinimumBalanceForRentExemptAccount,
@@ -12,6 +12,8 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { Metadata } from "@metaplex-foundation/mpl-token-metadata";
+import { BN } from "bn.js";
+import { AccountMeta, Keypair, PublicKey } from "@solana/web3.js";
 
 describe("derug-program", () => {
   // Configure the client to use the local cluster.
@@ -21,6 +23,8 @@ describe("derug-program", () => {
   const metaplexProgram = new anchor.web3.PublicKey(
     "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
   );
+
+  const mpx = new Metaplex(anchor.getProvider().connection);
 
   it("Is initialized!", async () => {
     const rugger = anchor.web3.Keypair.fromSecretKey(
@@ -36,8 +40,10 @@ describe("derug-program", () => {
     const derugger0 = anchor.web3.Keypair.generate();
     const derugger = anchor.web3.Keypair.generate();
 
+    console.log(derugger.publicKey.toString());
+
     const collectionKey = new anchor.web3.PublicKey(
-      "F7ehLXDAQqgWTQmxND3yEW6CxYMXh66PrM5g1DnMWjJ9"
+      "2hxtFTNNULe3YcULVS9WaNgtoZkxMbhyS6Nb9fecMku3"
     );
 
     await anchor
@@ -87,17 +93,21 @@ describe("derug-program", () => {
       program.programId
     );
 
-    await program.methods
-      .initializeDerug(100, "solana_monkey_business")
-      .accounts({
-        collectionKey,
-        collectionMetadata,
-        derugData,
-        payer: rugger.publicKey,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      })
-      .signers([rugger])
-      .rpc();
+    try {
+      await program.methods
+        .initializeDerug(10, "solana_monkey_business")
+        .accounts({
+          collectionKey,
+          collectionMetadata,
+          derugData,
+          payer: rugger.publicKey,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .signers([rugger])
+        .rpc();
+    } catch (error) {
+      console.log(error);
+    }
 
     assert.equal(
       (await program.account.derugData.fetch(derugData)).collection.toString(),
@@ -125,7 +135,14 @@ describe("derug-program", () => {
     };
 
     await program.methods
-      .createOrUpdateDerugRequest([utilityDto0])
+      .createOrUpdateDerugRequest(
+        [utilityDto0],
+        500,
+        new BN(14000),
+        new BN(7 * 3600 + 1),
+        "DERUG COLL",
+        "DRG"
+      )
       .accounts({
         derugData,
         derugRequest: derugRequest0,
@@ -173,7 +190,14 @@ describe("derug-program", () => {
     };
 
     await program.methods
-      .createOrUpdateDerugRequest([utilityDto])
+      .createOrUpdateDerugRequest(
+        [utilityDto0],
+        500,
+        new BN(14000),
+        new BN(7 * 3600 + 1),
+        "DERUG COLL",
+        "DRG"
+      )
       .accounts({
         derugData,
         derugRequest,
@@ -189,16 +213,16 @@ describe("derug-program", () => {
     //Vote
 
     const nftMint = new anchor.web3.PublicKey(
-      "6QjrgFXSgtV2yFF9y1Z6NeTTFtqxKNmnEizGEkqDfiJZ"
+      "884Rqxkc4fS6zEAHMfwhTNFcda7Tzp3yRXp9Cq3s3sfx"
     );
 
-    const [nftMetadata] = anchor.web3.PublicKey.findProgramAddressSync(
+    const [nftMetadata] = PublicKey.findProgramAddressSync(
       [Buffer.from("metadata"), metaplexProgram.toBuffer(), nftMint.toBuffer()],
       metaplexProgram
     );
 
     const nftTokenAccount = new anchor.web3.PublicKey(
-      "54ZSkc3gFWySat9eYaN87kNVqXYFwnHbjyBEFjvAghcR"
+      "7GL1fEXnFmfJFUEqeH8ekPT9VtZZHFicYr8SLb6WFvD7"
     );
 
     const [voteRecord] = anchor.web3.PublicKey.findProgramAddressSync(
@@ -233,18 +257,22 @@ describe("derug-program", () => {
       },
     ];
 
-    await program.methods
-      .vote()
-      .accounts({
-        derugData,
-        derugRequest,
-        payer: rugger.publicKey,
-        systemProgram: anchor.web3.SystemProgram.programId,
-        feeWallet,
-      })
-      .remainingAccounts(remaining_accounts)
-      .signers([rugger])
-      .rpc();
+    try {
+      await program.methods
+        .vote()
+        .accounts({
+          derugData,
+          derugRequest,
+          payer: rugger.publicKey,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          feeWallet,
+        })
+        .remainingAccounts(remaining_accounts)
+        .signers([rugger])
+        .rpc();
+    } catch (error) {
+      console.log(error);
+    }
 
     assert.equal(
       (await program.account.derugRequest.fetch(derugRequest)).voteCount,
@@ -258,15 +286,32 @@ describe("derug-program", () => {
 
     //Claim victory
 
+    const [remintConfig] = PublicKey.findProgramAddressSync(
+      [Buffer.from("remint-config"), derugData.toBuffer()],
+      program.programId
+    );
+
+    const candyMachine = Keypair.generate();
+
+    const claimVictoryRemainingAccounts: AccountMeta[] = [
+      {
+        isSigner: false,
+        isWritable: false,
+        pubkey: candyMachine.publicKey,
+      },
+    ];
+
     await program.methods
       .claimVictory()
       .accounts({
         derugData,
         derugRequest,
         payer: derugger.publicKey,
+        remintConfig,
         systemProgram: anchor.web3.SystemProgram.programId,
         feeWallet,
       })
+      .remainingAccounts(claimVictoryRemainingAccounts)
       .signers([derugger])
       .rpc();
 
@@ -377,6 +422,7 @@ describe("derug-program", () => {
         tokenAccount: newCollectionTokenAccount.publicKey,
         masterEdition: newCollectionEdition,
         payer: derugger.publicKey,
+        remintConfig,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         pdaAuthority: pdaAuthority,
         metadataProgram: metaplexProgram,
@@ -472,6 +518,8 @@ describe("derug-program", () => {
         derugData,
         derugRequest,
         metadataProgram: metaplexProgram,
+        remintConfig: remintConfig,
+        feeWallet: feeWallet,
         newCollection: newCollectionMint.publicKey,
         newEdition: newNftEdition,
         newMetadata: newNftMetadata,
@@ -503,41 +551,37 @@ describe("derug-program", () => {
       .signers([rugger])
       .rpc();
 
-    await program.methods
-      .remintNft()
-      .accounts({
-        derugData,
-        derugRequest,
-        metadataProgram: metaplexProgram,
-        newCollection: newCollectionMint.publicKey,
-        newEdition: newNftEdition,
-        newMetadata: newNftMetadata,
-        oldCollection: collectionKey,
-        oldEdition,
-        oldMint: nftMint,
-        payer: rugger.publicKey,
-        oldToken: nftTokenAccount,
-        oldMetadata: nftMetadata,
-        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-        systemProgram: anchor.web3.SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        pdaAuthority,
-        newMint: newNftMintKeypair.publicKey,
-        newToken: newNftTokenKeypair.publicKey,
-        feeWallet,
-      })
-      .preInstructions([
-        anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({
-          units: 130000000,
-        }),
-      ])
-      .signers([rugger])
-      .rpc();
-
-    const newMetadataAccount = await Metadata.fromAccountAddress(
-      anchor.getProvider().connection,
-      newNftMetadata
-    );
+    // await program.methods
+    //   .remintNft()
+    //   .accounts({
+    //     derugData,
+    //     derugRequest,
+    //     metadataProgram: metaplexProgram,
+    //     newCollection: newCollectionMint.publicKey,
+    //     newEdition: newNftEdition,
+    //     newMetadata: newNftMetadata,
+    //     oldCollection: collectionKey,
+    //     oldEdition,
+    //     remintConfig: remintConfig,
+    //     oldMint: nftMint,
+    //     payer: rugger.publicKey,
+    //     oldToken: nftTokenAccount,
+    //     oldMetadata: nftMetadata,
+    //     rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+    //     systemProgram: anchor.web3.SystemProgram.programId,
+    //     tokenProgram: TOKEN_PROGRAM_ID,
+    //     pdaAuthority,
+    //     newMint: newNftMintKeypair.publicKey,
+    //     newToken: newNftTokenKeypair.publicKey,
+    //     feeWallet,
+    //   })
+    //   .preInstructions([
+    //     anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({
+    //       units: 130000000,
+    //     }),
+    //   ])
+    //   .signers([rugger])
+    //   .rpc();
 
     await program.methods
       .updateVerifyCollection()

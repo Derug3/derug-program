@@ -55,10 +55,6 @@ pub struct RemintNft<'info> {
     #[account(seeds=[REMINT_CONFIG_SEED,derug_data.key().as_ref()],bump)]
     pub remint_config: Account<'info, RemintConfig>,
 
-    #[account(address=derug_request.derugger)]
-    ///CHECK: address checked
-    pub derug_authority: UncheckedAccount<'info>,
-
     ///CHECK
     #[account(mut, seeds=[PREFIX.as_ref(), METADATA_PROGRAM_ID.as_ref(), old_mint.key().as_ref(), EDITION.as_ref()],bump, seeds::program = METADATA_PROGRAM_ID)]
     pub old_edition: UncheckedAccount<'info>,
@@ -193,9 +189,12 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
 
     let derug_request = &ctx.accounts.derug_request;
 
+    let len = ctx.accounts.derug_data.total_reminted.to_string().len();
+
     let formated_name = format!(
-        "{} #{}",
+        "{} #{}{}",
         derug_request.new_name.to_uppercase(),
+        "0".repeat(4 - len),
         ctx.accounts.derug_data.total_reminted + 1
     );
 
@@ -209,11 +208,18 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         formated_name,
         derug_request.new_symbol.clone(),
         old_metadata_account.data.uri,
-        Some(vec![Creator {
-            address: ctx.accounts.derug_request.derugger,
-            share: 100,
-            verified: false,
-        }]),
+        Some(vec![
+            Creator {
+                address: ctx.accounts.remint_config.candy_machine_key,
+                share: 0,
+                verified: false,
+            },
+            Creator {
+                address: ctx.accounts.derug_request.derugger,
+                share: 100,
+                verified: false,
+            },
+        ]),
         500,
         true,
         true,

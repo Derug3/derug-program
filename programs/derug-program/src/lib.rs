@@ -23,7 +23,7 @@ pub mod derug_program {
     pub fn create_or_update_derug_request(
         ctx: Context<CreateOrUpdateDerugRequest>,
         utility_dtos: Vec<UpdateUtilityDataDto>,
-        seller_fee_bps: u8,
+        seller_fee_bps: u32,
         public_mint_price: Option<u64>,
         private_mint_duration: Option<i64>,
         new_name: String,
