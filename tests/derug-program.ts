@@ -308,11 +308,16 @@ describe("derug-program", () => {
 
     const candyMachine = Keypair.generate();
 
+    const [candyMachineCreator] = PublicKey.findProgramAddressSync(
+      [Buffer.from("candy_machine"), candyMachine.publicKey.toBuffer()],
+      new anchor.web3.PublicKey("cndy3Z4yapfJBmL3ShUp5exZKqR3z33thTzeNMm2gRZ")
+    );
+
     const claimVictoryRemainingAccounts: AccountMeta[] = [
       {
         isSigner: false,
         isWritable: false,
-        pubkey: candyMachine.publicKey,
+        pubkey: candyMachineCreator,
       },
       {
         isSigner: false,
@@ -662,17 +667,21 @@ describe("derug-program", () => {
       new PublicKey("2973mQSn8ywhXn5swZ9xTWPp1xuygwjWjLijhL7qRYTW"),
     ];
     const uris: string[] = [];
-    const MAINNET_CONNECTION = new Connection("https://rpc.ankr.com/solana");
+    const MAINNET_CONNECTION = new Connection(
+      "https://api.mainnet-beta.solana.com"
+    );
 
     for (const mint of publicMintNfts) {
-      uris.push(
-        (
-          await Metadata.fromAccountAddress(
-            MAINNET_CONNECTION,
-            mpx.nfts().pdas().metadata({ mint: mint })
-          )
-        ).data.uri.split("\\")[0]
-      );
+      try {
+        uris.push(
+          (
+            await Metadata.fromAccountAddress(
+              MAINNET_CONNECTION,
+              mpx.nfts().pdas().metadata({ mint: mint })
+            )
+          ).data.uri.split("\\")[0]
+        );
+      } catch (error) {}
     }
     const remintConfigAccount = await program.account.remintConfig.fetch(
       remintConfig
@@ -713,7 +722,7 @@ describe("derug-program", () => {
       },
       items: uris.map((uri, index) => {
         return {
-          name: "#000" + +(index + 2),
+          name: "DeGod #000" + +(index + 2),
           uri,
         };
       }),
