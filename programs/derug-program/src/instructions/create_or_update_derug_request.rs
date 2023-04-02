@@ -1,5 +1,6 @@
 use crate::errors::DerugError;
 use crate::state::derug_data::ActiveRequest;
+use crate::state::derug_request::DeruggerCreator;
 use crate::state::{Action, RequestStatus, UtilityData};
 use crate::utilities::calculate_new_suggestion_data_len;
 use crate::{
@@ -35,6 +36,7 @@ pub fn create_or_update_derug_request(
     seller_fee_bps: u32,
     public_mint_price: Option<u64>,
     private_mint_duration: Option<i64>,
+    creators: Vec<DeruggerCreator>,
 ) -> Result<()> {
     let derug_request = &mut ctx.accounts.derug_request;
     let derug_data = &mut ctx.accounts.derug_data;
@@ -138,11 +140,15 @@ pub fn create_or_update_derug_request(
 
         derug_request.mint_currency = Some(mint_currency.key());
     }
+
+    require!(creators.len() <= 5, DerugError::TooManyCreators);
+
     derug_request.vote_count = 0;
     derug_request.derug_data = ctx.accounts.derug_data.key();
     derug_request.private_mint_duration = private_mint_duration;
     derug_request.mint_price = public_mint_price;
     derug_request.seller_fee_bps = seller_fee_bps;
+    derug_request.creators = creators;
 
     transfer(
         CpiContext::new(

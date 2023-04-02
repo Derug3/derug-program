@@ -7,6 +7,7 @@ pub const REMINT_CONFIG_SEED: &[u8] = b"remint-config";
 pub const TOKEN_SEED: &[u8] = b"token";
 pub const MINT_SEED: &[u8] = b"mint";
 pub const AUTHORITY_SEED: &[u8] = b"authority";
+pub const CANDY_MACHINE_SEED: &[u8] = b"candy_machine";
 //MAIN
 // pub const VOTING_TIME: i64 = 25920000;
 //TEST

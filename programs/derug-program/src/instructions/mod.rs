@@ -21,3 +21,6 @@ pub use remint_nft::*;
 
 pub mod update_verify_collection;
 pub use update_verify_collection::*;
+
+pub mod admin;
+pub use admin::*;

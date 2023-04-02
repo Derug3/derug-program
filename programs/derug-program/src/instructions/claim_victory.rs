@@ -1,9 +1,8 @@
-use std::mem::size_of;
-
 use anchor_lang::{
     prelude::*,
     system_program::{transfer, Transfer},
 };
+
 use anchor_spl::token::TokenAccount;
 use itertools::Itertools;
 
@@ -24,7 +23,7 @@ pub struct ClaimVictory<'info> {
     pub derug_data: Box<Account<'info, DerugData>>,
     #[account(mut)]
     pub payer: Signer<'info>,
-    #[account(init,seeds=[REMINT_CONFIG_SEED,derug_data.key().as_ref()],payer=payer,bump,space=size_of::<RemintConfig>())]
+    #[account(init,seeds=[REMINT_CONFIG_SEED,derug_data.key().as_ref()],payer=payer,bump,space=RemintConfig::LEN)]
     pub remint_config: Account<'info, RemintConfig>,
     ///CHECK
     #[account(mut, address="DRG3YRmurqpWQ1jEjK8DiWMuqPX9yL32LXLbuRdoiQwt".parse::<Pubkey>().unwrap())]
@@ -39,23 +38,28 @@ pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
         ctx.accounts.payer.key() == derug_request.derugger.key(),
         DerugError::WrongDerugger
     );
-    //TODO:comment in after testing
-    // require!(
-    //     Clock::get().unwrap().unix_timestamp > derug_data.period_end,
-    //     DerugError::InvalidStatus
-    // );
+    require!(
+        Clock::get().unwrap().unix_timestamp > derug_data.period_end,
+        DerugError::InvalidStatus
+    );
 
     let remint_config = &mut ctx.accounts.remint_config;
-
-    remint_config.authority = ctx.accounts.payer.key();
-
     let remaining_accounts = &mut ctx.remaining_accounts.iter();
 
-    let candy_machine = remaining_accounts.next().unwrap();
+    if let Some(candy_machine_info) = remaining_accounts.next() {
+        let candy_machine_creator = remaining_accounts.next().unwrap();
+        remint_config.authority = ctx.accounts.payer.key();
+        remint_config.candy_machine_key = candy_machine_info.key();
+        remint_config.candy_machine_creator = candy_machine_creator.key();
 
-    remint_config.candy_machine_key = candy_machine.key();
-
-    remint_config.public_mint_price = derug_request.mint_price;
+        remint_config.public_mint_price = derug_request.mint_price;
+        remint_config.new_name = derug_request.new_name.clone();
+        remint_config.new_symbol = derug_request.new_symbol.clone();
+        remint_config.seller_fee_bps = derug_request.seller_fee_bps;
+        remint_config.mint_currency = derug_request.mint_currency;
+        remint_config.derug_request = derug_request.key();
+        remint_config.creators = derug_request.creators.clone();
+    }
 
     if let Some(private_mint_end) = derug_request.private_mint_duration {
         remint_config.private_mint_end = Some(
@@ -66,9 +70,6 @@ pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
                 .unwrap(),
         );
     }
-
-    remint_config.seller_fee_bps = derug_request.seller_fee_bps;
-    remint_config.mint_currency = derug_request.mint_currency;
 
     //Set the percentage
     let threshold = derug_data

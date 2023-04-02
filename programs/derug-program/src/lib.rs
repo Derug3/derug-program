@@ -28,6 +28,7 @@ pub mod derug_program {
         private_mint_duration: Option<i64>,
         new_name: String,
         new_symbol: String,
+        creators: Vec<DeruggerCreator>,
     ) -> Result<()> {
         instructions::create_or_update_derug_request(
             ctx,
@@ -37,6 +38,7 @@ pub mod derug_program {
             seller_fee_bps,
             public_mint_price,
             private_mint_duration,
+            creators,
         )
     }
 
@@ -64,5 +66,11 @@ pub mod derug_program {
 
     pub fn update_verify_collection(ctx: Context<UpdateVerifyCollection>) -> Result<()> {
         instructions::update_verify_collection(ctx)
+    }
+
+    pub fn close_program_account<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, CloseProgramAccount<'info>>,
+    ) -> Result<()> {
+        instructions::close_program_account(ctx)
     }
 }

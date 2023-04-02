@@ -52,4 +52,10 @@ pub enum DerugError {
 
     #[msg("Invalid token owner")]
     InvalidTokenOwner,
+
+    #[msg("Too many creators")]
+    TooManyCreators,
+
+    #[msg("Private mint ended")]
+    PrivateMintEnded,
 }

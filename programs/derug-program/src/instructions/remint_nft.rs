@@ -101,6 +101,13 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         DerugError::NoWinner
     );
 
+    if let Some(private_mint) = ctx.accounts.remint_config.private_mint_end {
+        require!(
+            Clock::get().unwrap().unix_timestamp <= private_mint,
+            DerugError::PrivateMintEnded
+        );
+    }
+
     initialize_mint(
         CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
@@ -210,7 +217,7 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         old_metadata_account.data.uri,
         Some(vec![
             Creator {
-                address: ctx.accounts.remint_config.candy_machine_key,
+                address: ctx.accounts.remint_config.candy_machine_creator,
                 share: 0,
                 verified: false,
             },

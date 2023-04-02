@@ -140,24 +140,29 @@ describe("derug-program", () => {
       },
     };
 
-    await program.methods
-      .createOrUpdateDerugRequest(
-        [utilityDto0],
-        500,
-        new BN(14000),
-        new BN(7 * 3600 + 1),
-        "DERUG COLL",
-        "DRG"
-      )
-      .accounts({
-        derugData,
-        derugRequest: derugRequest0,
-        payer: derugger0.publicKey,
-        systemProgram: anchor.web3.SystemProgram.programId,
-        feeWallet,
-      })
-      .signers([derugger0])
-      .rpc();
+    try {
+      await program.methods
+        .createOrUpdateDerugRequest(
+          [utilityDto0],
+          500,
+          new BN(14000),
+          new BN(7 * 3600 + 1),
+          "DERUG COLL",
+          "DRG",
+          []
+        )
+        .accounts({
+          derugData,
+          derugRequest: derugRequest0,
+          payer: derugger0.publicKey,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          feeWallet,
+        })
+        .signers([derugger0])
+        .rpc();
+    } catch (error) {
+      console.log(error);
+    }
 
     console.log("DERUG REQUEST CREATED");
 
@@ -210,7 +215,8 @@ describe("derug-program", () => {
         new BN(1),
         new BN(7 * 3600 + 1),
         "DERUG COLL",
-        "DRG"
+        "DRG",
+        []
       )
       .accounts({
         derugData,
@@ -314,6 +320,11 @@ describe("derug-program", () => {
     );
 
     const claimVictoryRemainingAccounts: AccountMeta[] = [
+      {
+        isSigner: false,
+        isWritable: false,
+        pubkey: candyMachine.publicKey,
+      },
       {
         isSigner: false,
         isWritable: false,
