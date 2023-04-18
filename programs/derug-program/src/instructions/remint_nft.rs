@@ -209,7 +209,7 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
     //     ctx.accounts.derug_data.total_reminted + 1
     // );
 
-    let creators_vec: Vec<Creator> = ctx
+    let mut creators_vec: Vec<Creator> = ctx
         .accounts
         .remint_config
         .creators
@@ -220,6 +220,16 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
             verified: false,
         })
         .collect();
+
+    Vec::insert(
+        &mut creators_vec,
+        0,
+        Creator {
+            address: ctx.accounts.remint_config.candy_machine_creator.key(),
+            verified: false,
+            share: 0,
+        },
+    );
 
     let create_metadata = create_metadata_accounts_v3(
         ctx.accounts.metadata_program.key(),
