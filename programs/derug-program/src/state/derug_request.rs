@@ -44,8 +44,8 @@ impl RemintConfig {
 
 #[derive(AnchorDeserialize, AnchorSerialize, Clone, Debug)]
 pub struct DeruggerCreator {
-    address: Pubkey,
-    share: u8,
+    pub address: Pubkey,
+    pub share: u8,
 }
 
 impl Space for DeruggerCreator {
@@ -66,6 +66,7 @@ pub enum RequestStatus {
     Initialized,
     Voting,
     Succeeded,
+    UploadingMetadata,
     Reminting,
     PublicMint,
     Completed,
@@ -106,4 +107,10 @@ pub struct NftRemintedEvent {
     pub new_nft_metadata: Pubkey,
     pub old_nft_mint: Pubkey,
     pub old_nft_metadata: Pubkey,
+}
+
+#[event]
+pub struct PrivateMintStarted {
+    pub derug_data: Pubkey,
+    pub remint_config: Pubkey,
 }

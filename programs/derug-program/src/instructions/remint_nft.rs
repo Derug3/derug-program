@@ -14,7 +14,7 @@ use anchor_spl::token::{
 
 use mpl_token_metadata::{
     instruction::{create_master_edition_v3, create_metadata_accounts_v3},
-    state::{Collection, Creator, Metadata, TokenMetadataAccount, EDITION, PREFIX},
+    state::{Creator, Metadata, TokenMetadataAccount, EDITION, PREFIX},
     ID as METADATA_PROGRAM_ID,
 };
 use solana_program::program::{invoke, invoke_signed};
@@ -80,6 +80,8 @@ pub struct RemintNft<'info> {
 
 pub fn remint_nft<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, RemintNft<'info>>,
+    new_name: String,
+    new_uri: String,
 ) -> Result<()> {
     require!(
         ctx.accounts.old_collection.key() == ctx.accounts.derug_data.collection,
@@ -180,7 +182,9 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         old_collection,
     );
 
-    invoke(&burn_ix, &burn_ix_accounts)?;
+    if !ctx.accounts.old_token.is_frozen() {
+        invoke(&burn_ix, &burn_ix_accounts)?;
+    }
 
     mint_to(
         CpiContext::new(
@@ -196,14 +200,26 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
 
     let derug_request = &ctx.accounts.derug_request;
 
-    let len = ctx.accounts.derug_data.total_reminted.to_string().len();
+    let _len = ctx.accounts.derug_data.total_reminted.to_string().len();
 
-    let formated_name = format!(
-        "{} #{}{}",
-        derug_request.new_name.to_uppercase(),
-        "0".repeat(4 - len),
-        ctx.accounts.derug_data.total_reminted + 1
-    );
+    // let formated_name = format!(
+    //     "{} #{}{}",
+    //     derug_request.new_name.to_uppercase(),
+    //     "0".repeat(4 - len),
+    //     ctx.accounts.derug_data.total_reminted + 1
+    // );
+
+    let creators_vec: Vec<Creator> = ctx
+        .accounts
+        .remint_config
+        .creators
+        .iter()
+        .map(|c| Creator {
+            address: c.address,
+            share: c.share,
+            verified: false,
+        })
+        .collect();
 
     let create_metadata = create_metadata_accounts_v3(
         ctx.accounts.metadata_program.key(),
@@ -212,28 +228,18 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         ctx.accounts.payer.key(),
         ctx.accounts.payer.key(),
         ctx.accounts.pda_authority.key(),
-        formated_name,
+        new_name,
         derug_request.new_symbol.clone(),
-        old_metadata_account.data.uri,
-        Some(vec![
-            Creator {
-                address: ctx.accounts.remint_config.candy_machine_creator,
-                share: 0,
-                verified: false,
-            },
-            Creator {
-                address: ctx.accounts.derug_request.derugger,
-                share: 100,
-                verified: false,
-            },
-        ]),
-        500,
+        new_uri,
+        Some(creators_vec),
+        ctx.accounts
+            .remint_config
+            .seller_fee_bps
+            .try_into()
+            .unwrap(),
         true,
         true,
-        Some(Collection {
-            key: ctx.accounts.new_collection.key(),
-            verified: false,
-        }),
+        None,
         None,
         None,
     );

@@ -3,47 +3,53 @@ use anchor_lang::prelude::*;
 use crate::state::{
     derug_data::DerugData,
     derug_request::{DerugRequest, RemintConfig},
+    vote_record::VoteRecord,
 };
 
 #[derive(Accounts)]
 pub struct CloseProgramAccount<'info> {
     #[account(mut)]
-    pub derug_data: Account<'info, DerugData>,
+    ///CHECK
+    pub derug_data: UncheckedAccount<'info>,
     #[account(mut)]
-    pub derug_request: Account<'info, DerugRequest>,
+    ///CHECK
+    pub derug_request: UncheckedAccount<'info>,
     #[account()]
     pub payer: Signer<'info>,
     #[account(mut)]
-    pub remint_config: Account<'info, RemintConfig>,
+    ///CHECK
+    pub remint_config: UncheckedAccount<'info>,
 }
 
 pub fn close_program_account<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, CloseProgramAccount<'info>>,
 ) -> Result<()> {
-    // ctx.accounts
-    //     .derug_data
-    //     .close(ctx.accounts.payer.to_account_info())
-    //     .unwrap();
+    if ctx.accounts.derug_data.data_len() > 8 {
+        let derug_data = Account::<DerugData>::try_from(&ctx.accounts.derug_data).unwrap();
 
-    // ctx.accounts
-    //     .derug_request
-    //     .close(ctx.accounts.payer.to_account_info())
-    //     .unwrap();
+        derug_data.close(ctx.accounts.payer.to_account_info())?;
+    }
+    if ctx.accounts.derug_request.data_len() > 8 {
+        let derug_request = Account::<DerugRequest>::try_from(&ctx.accounts.derug_request).unwrap();
 
-    ctx.accounts
-        .remint_config
-        .close(ctx.accounts.payer.to_account_info())
-        .unwrap();
+        derug_request.close(ctx.accounts.payer.to_account_info())?;
+    }
 
-    // let remaining_accounts = &mut ctx.remaining_accounts.iter();
+    if ctx.accounts.remint_config.data_len() > 8 {
+        let remint_config = Account::<RemintConfig>::try_from(&ctx.accounts.remint_config).unwrap();
 
-    // for rem_acc in remaining_accounts {
-    //     let vote_record = Account::<VoteRecord>::try_from(&rem_acc).unwrap();
+        remint_config.close(ctx.accounts.payer.to_account_info())?;
+    }
 
-    //     vote_record
-    //         .close(ctx.accounts.payer.to_account_info())
-    //         .unwrap();
-    // }
+    let remaining_accounts = &mut ctx.remaining_accounts.iter();
+
+    for rem_acc in remaining_accounts {
+        let vote_record = Account::<VoteRecord>::try_from(&rem_acc).unwrap();
+
+        vote_record
+            .close(ctx.accounts.payer.to_account_info())
+            .unwrap();
+    }
 
     Ok(())
 }

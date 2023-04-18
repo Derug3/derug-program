@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program::{transfer, Transfer};
 use anchor_spl::token::Mint;
-use mpl_token_metadata::instruction::verify_sized_collection_item;
+// use mpl_token_metadata::instruction::verify_sized_collection_item;
 use mpl_token_metadata::state::EDITION;
 use mpl_token_metadata::{instruction::update_metadata_accounts_v2, state::PREFIX};
 use solana_program::program::invoke_signed;
@@ -53,36 +53,38 @@ pub fn update_verify_collection(ctx: Context<UpdateVerifyCollection>) -> Result<
         DerugError::InvalidWinningRequest
     );
 
-    let set_collection_ix = verify_sized_collection_item(
-        ctx.accounts.metadata_program.key(),
-        ctx.accounts.nft_metadata.key(),
-        ctx.accounts.pda_authority.key(),
-        ctx.accounts.payer.key(),
-        ctx.accounts.collection_mint.key(),
-        ctx.accounts.collection_metadata.key(),
-        ctx.accounts.collection_master_edition.key(),
-        Some(ctx.accounts.collection_authority.key()),
-    );
+    //Temporarily commented while we find out how to enable collection in candy machine
 
-    invoke_signed(
-        &set_collection_ix,
-        &[
-            ctx.accounts.nft_metadata.to_account_info(),
-            ctx.accounts.pda_authority.to_account_info(),
-            ctx.accounts.payer.to_account_info(),
-            ctx.accounts.pda_authority.to_account_info(),
-            ctx.accounts.collection_mint.to_account_info(),
-            ctx.accounts.collection_metadata.to_account_info(),
-            ctx.accounts.collection_master_edition.to_account_info(),
-            ctx.accounts.collection_authority.to_account_info(),
-        ],
-        &[&[
-            DERUG_DATA_SEED,
-            ctx.accounts.derug_request.key().as_ref(),
-            AUTHORITY_SEED,
-            &[*ctx.bumps.get(&"pda_authority".to_string()).unwrap()],
-        ]],
-    )?;
+    // let set_collection_ix = verify_sized_collection_item(
+    //     ctx.accounts.metadata_program.key(),
+    //     ctx.accounts.nft_metadata.key(),
+    //     ctx.accounts.pda_authority.key(),
+    //     ctx.accounts.payer.key(),
+    //     ctx.accounts.collection_mint.key(),
+    //     ctx.accounts.collection_metadata.key(),
+    //     ctx.accounts.collection_master_edition.key(),
+    //     Some(ctx.accounts.collection_authority.key()),
+    // );
+
+    // invoke_signed(
+    //     &set_collection_ix,
+    //     &[
+    //         ctx.accounts.nft_metadata.to_account_info(),
+    //         ctx.accounts.pda_authority.to_account_info(),
+    //         ctx.accounts.payer.to_account_info(),
+    //         ctx.accounts.pda_authority.to_account_info(),
+    //         ctx.accounts.collection_mint.to_account_info(),
+    //         ctx.accounts.collection_metadata.to_account_info(),
+    //         ctx.accounts.collection_master_edition.to_account_info(),
+    //         ctx.accounts.collection_authority.to_account_info(),
+    //     ],
+    //     &[&[
+    //         DERUG_DATA_SEED,
+    //         ctx.accounts.derug_request.key().as_ref(),
+    //         AUTHORITY_SEED,
+    //         &[*ctx.bumps.get(&"pda_authority".to_string()).unwrap()],
+    //     ]],
+    // )?;
 
     let update_ix = update_metadata_accounts_v2(
         ctx.accounts.metadata_program.key(),

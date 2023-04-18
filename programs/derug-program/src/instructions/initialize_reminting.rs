@@ -218,8 +218,8 @@ pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
 
     invoke(&approve_collection_authority_ix, &approve_accounts)?;
 
-    ctx.accounts.derug_request.request_status = RequestStatus::Reminting;
-    ctx.accounts.derug_data.derug_status = DerugStatus::Reminting;
+    ctx.accounts.derug_request.request_status = RequestStatus::UploadingMetadata;
+    ctx.accounts.derug_data.derug_status = DerugStatus::UploadingMetadata;
 
     transfer(
         CpiContext::new(

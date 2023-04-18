@@ -14,8 +14,6 @@ async function closeAccounts() {
   const connection = new Connection("https://api.devnet.solana.com ");
   const payer = Keypair.fromSecretKey(new Uint8Array(kp));
 
-  console.log(payer.publicKey.toString());
-
   const program = new Program<DerugProgram>(
     IDL,
     new PublicKey("8spRpt6yfwWjE8BAyR9jX1xFkVLjQcmijVha6hqQPVMU"),
@@ -38,7 +36,7 @@ async function closeAccounts() {
     [
       Buffer.from("derug-data"),
       derugData.toBuffer(),
-      new PublicKey("A6DHb3s8VKSKV3cC58xYzLooyVsLuKCrWwQEe2ZdbEZg").toBuffer(),
+      new PublicKey("6smu36j5E6AfW4NM2RQPpDbdzEpp9tKZvg7ZTE2KKgcL").toBuffer(),
     ],
     program.programId
   );
@@ -48,41 +46,26 @@ async function closeAccounts() {
     program.programId
   );
 
-  for (const cvr of chunkedVoteRecords) {
-    const remainingAccounts: AccountMeta[] = cvr.map((vr) => {
-      return {
-        isSigner: false,
-        isWritable: true,
-        pubkey: vr.publicKey,
-      };
+  const ix = program.instruction.closeRemintConfig({
+    accounts: {
+      remintConfg: new PublicKey(
+        "7uRPMKB9i6E8TaLWWp18aXGLwavwtpfFSy8woekdroU6"
+      ),
+      payer: payer.publicKey,
+    },
+  });
+
+  try {
+    const tx = new Transaction({
+      feePayer: payer.publicKey,
+      recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
     });
 
-    const ix = program.instruction.closeProgramAccount({
-      accounts: {
-        derugData,
-        derugRequest,
-        payer: payer.publicKey,
-        remintConfig,
-      },
-      remainingAccounts: remainingAccounts,
-    });
+    tx.add(ix);
 
-    try {
-      const tx = new Transaction({
-        feePayer: payer.publicKey,
-        recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
-      });
-      tx.add(ix);
-      const txSim = await connection.simulateTransaction(tx);
-      console.log(txSim.value.logs);
-
-      // tx.add(ix);
-
-      const txSig = await connection.sendTransaction(tx, [payer]);
-      await connection.confirmTransaction(txSig);
-    } catch (error) {
-      console.log(error);
-    }
+    await connection.sendTransaction(tx, [payer]);
+  } catch (error) {
+    console.log(error);
   }
 }
 

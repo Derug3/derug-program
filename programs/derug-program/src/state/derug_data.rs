@@ -49,6 +49,7 @@ pub enum DerugStatus {
     Initialized,
     Voting,
     Succeeded,
+    UploadingMetadata,
     Reminting,
     PublicMint,
     Completed,

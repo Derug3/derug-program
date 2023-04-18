@@ -11,4 +11,6 @@ pub const CANDY_MACHINE_SEED: &[u8] = b"candy_machine";
 //MAIN
 // pub const VOTING_TIME: i64 = 25920000;
 //TEST
-pub const VOTING_TIME: i64 = 360;
+pub const VOTING_TIME: i64 = 90;
+
+pub const METADATA_UPLOADER: &str = "KQ1jcFYvnH9DNUzBfVbquRohP9uZ6C7DVJJDyqiGB4P";

@@ -24,3 +24,6 @@ pub use update_verify_collection::*;
 
 pub mod admin;
 pub use admin::*;
+
+pub mod init_private_mint;
+pub use init_private_mint::*;

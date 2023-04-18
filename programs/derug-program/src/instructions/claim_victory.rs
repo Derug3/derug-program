@@ -31,7 +31,9 @@ pub struct ClaimVictory<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
+pub fn claim_victory<'a, 'b, 'c, 'info>(
+    ctx: Context<'a, 'b, 'c, 'info, ClaimVictory<'info>>,
+) -> Result<()> {
     let derug_request = &mut ctx.accounts.derug_request;
     let derug_data = &mut ctx.accounts.derug_data;
     require!(
@@ -48,6 +50,7 @@ pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
 
     if let Some(candy_machine_info) = remaining_accounts.next() {
         let candy_machine_creator = remaining_accounts.next().unwrap();
+
         remint_config.authority = ctx.accounts.payer.key();
         remint_config.candy_machine_key = candy_machine_info.key();
         remint_config.candy_machine_creator = candy_machine_creator.key();
@@ -59,16 +62,6 @@ pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
         remint_config.mint_currency = derug_request.mint_currency;
         remint_config.derug_request = derug_request.key();
         remint_config.creators = derug_request.creators.clone();
-    }
-
-    if let Some(private_mint_end) = derug_request.private_mint_duration {
-        remint_config.private_mint_end = Some(
-            Clock::get()
-                .unwrap()
-                .unix_timestamp
-                .checked_add(private_mint_end)
-                .unwrap(),
-        );
     }
 
     //Set the percentage

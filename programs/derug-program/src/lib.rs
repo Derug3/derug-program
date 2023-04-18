@@ -50,7 +50,9 @@ pub mod derug_program {
         instructions::cancel_derug_request(ctx)
     }
 
-    pub fn claim_victory(ctx: Context<ClaimVictory>) -> Result<()> {
+    pub fn claim_victory<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, ClaimVictory<'info>>,
+    ) -> Result<()> {
         instructions::claim_victory(ctx)
     }
 
@@ -60,8 +62,10 @@ pub mod derug_program {
 
     pub fn remint_nft<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, RemintNft<'info>>,
+        new_name: String,
+        new_uri: String,
     ) -> Result<()> {
-        instructions::remint_nft(ctx)
+        instructions::remint_nft(ctx, new_name, new_uri)
     }
 
     pub fn update_verify_collection(ctx: Context<UpdateVerifyCollection>) -> Result<()> {
@@ -72,5 +76,20 @@ pub mod derug_program {
         ctx: Context<'a, 'b, 'c, 'info, CloseProgramAccount<'info>>,
     ) -> Result<()> {
         instructions::close_program_account(ctx)
+    }
+    pub fn close_single_request(ctx: Context<CloseSingleRequest>) -> Result<()> {
+        instructions::close_single_request(ctx)
+    }
+
+    pub fn close_remint_config(ctx: Context<CloseRemintConfig>) -> Result<()> {
+        instructions::close_remint_config(ctx)
+    }
+
+    pub fn freeze_nft(ctx: Context<FreezeNft>) -> Result<()> {
+        instructions::freeze_nft(ctx)
+    }
+
+    pub fn init_private_mint(ctx: Context<InitPrivateMint>) -> Result<()> {
+        instructions::init_private_mint(ctx)
     }
 }
