@@ -7,3 +7,6 @@ pub use close_remint_config::*;
 
 pub mod freeze_nft;
 pub use freeze_nft::*;
+
+pub mod bypass_voting;
+pub use bypass_voting::*;

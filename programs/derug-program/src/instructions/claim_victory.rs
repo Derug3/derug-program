@@ -62,6 +62,7 @@ pub fn claim_victory<'a, 'b, 'c, 'info>(
         remint_config.mint_currency = derug_request.mint_currency;
         remint_config.derug_request = derug_request.key();
         remint_config.creators = derug_request.creators.clone();
+        remint_config.wallet_limit = derug_request.wallet_limit;
     }
 
     //Set the percentage

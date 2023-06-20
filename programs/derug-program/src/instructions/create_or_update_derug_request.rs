@@ -36,6 +36,7 @@ pub fn create_or_update_derug_request(
     seller_fee_bps: u32,
     public_mint_price: Option<u64>,
     private_mint_duration: Option<i64>,
+    wallet_limit: Option<u8>,
     creators: Vec<DeruggerCreator>,
 ) -> Result<()> {
     let derug_request = &mut ctx.accounts.derug_request;
@@ -71,6 +72,7 @@ pub fn create_or_update_derug_request(
             .collect();
         derug_request.request_status = RequestStatus::Voting;
 
+        derug_request.wallet_limit = wallet_limit;
         let new_len = derug_data
             .to_account_info()
             .data_len()

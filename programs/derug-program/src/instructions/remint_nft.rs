@@ -211,7 +211,7 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
 
     let mut creators_vec: Vec<Creator> = ctx
         .accounts
-        .remint_config
+        .derug_request
         .creators
         .iter()
         .map(|c| Creator {
@@ -230,6 +230,8 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
             share: 0,
         },
     );
+
+    msg!("CREATORS :{:?}", creators_vec);
 
     let create_metadata = create_metadata_accounts_v3(
         ctx.accounts.metadata_program.key(),

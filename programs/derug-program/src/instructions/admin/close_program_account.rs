@@ -29,11 +29,11 @@ pub fn close_program_account<'a, 'b, 'c, 'info>(
 
         derug_data.close(ctx.accounts.payer.to_account_info())?;
     }
-    if ctx.accounts.derug_request.data_len() > 8 {
-        let derug_request = Account::<DerugRequest>::try_from(&ctx.accounts.derug_request).unwrap();
+    // if ctx.accounts.derug_request.data_len() > 8 {
+    //     let derug_request = Account::<DerugRequest>::try_from(&ctx.accounts.derug_request).unwrap();
 
-        derug_request.close(ctx.accounts.payer.to_account_info())?;
-    }
+    //     derug_request.close(ctx.accounts.payer.to_account_info())?;
+    // }
 
     if ctx.accounts.remint_config.data_len() > 8 {
         let remint_config = Account::<RemintConfig>::try_from(&ctx.accounts.remint_config).unwrap();

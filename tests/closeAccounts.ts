@@ -18,7 +18,7 @@ async function closeAccounts() {
 
   const program = new Program<DerugProgram>(
     IDL,
-    new PublicKey("8spRpt6yfwWjE8BAyR9jX1xFkVLjQcmijVha6hqQPVMU"),
+    new PublicKey("4T3FDpLEQQk6LHLP3Bx7Ako91rGE7CSN4ntusgBmhgoW"),
     new AnchorProvider(connection, new NodeWallet(payer), {})
   );
 

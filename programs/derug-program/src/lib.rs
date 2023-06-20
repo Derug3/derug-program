@@ -6,7 +6,7 @@ pub mod state;
 pub mod utilities;
 use instructions::*;
 use state::*;
-declare_id!("8spRpt6yfwWjE8BAyR9jX1xFkVLjQcmijVha6hqQPVMU");
+declare_id!("DERUGwXJu3m1DG1VNq4gP7Ppkza95P7XbeujbtSNAebu");
 
 #[program]
 pub mod derug_program {
@@ -28,6 +28,7 @@ pub mod derug_program {
         private_mint_duration: Option<i64>,
         new_name: String,
         new_symbol: String,
+        wallet_limit: Option<u8>,
         creators: Vec<DeruggerCreator>,
     ) -> Result<()> {
         instructions::create_or_update_derug_request(
@@ -38,6 +39,7 @@ pub mod derug_program {
             seller_fee_bps,
             public_mint_price,
             private_mint_duration,
+            wallet_limit,
             creators,
         )
     }
@@ -91,5 +93,9 @@ pub mod derug_program {
 
     pub fn init_private_mint(ctx: Context<InitPrivateMint>) -> Result<()> {
         instructions::init_private_mint(ctx)
+    }
+
+    pub fn bypass_voting(ctx: Context<BypassVoting>) -> Result<()> {
+        instructions::bypass_voting(ctx)
     }
 }

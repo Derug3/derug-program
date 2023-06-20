@@ -549,7 +549,7 @@ describe("derug-program", () => {
     );
 
     await program.methods
-      .remintNft()
+      .remintNft("", "")
       .accounts({
         derugData,
         derugRequest,
