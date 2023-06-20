@@ -1,10 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::state::{
-    derug_data::DerugData,
-    derug_request::{DerugRequest, RemintConfig},
-    vote_record::VoteRecord,
-};
+use crate::state::{derug_data::DerugData, derug_request::RemintConfig, vote_record::VoteRecord};
 
 #[derive(Accounts)]
 pub struct CloseProgramAccount<'info> {
