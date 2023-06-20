@@ -10,3 +10,6 @@ pub use freeze_nft::*;
 
 pub mod skip_vote;
 pub use skip_vote::*;
+
+pub mod bypass_voting;
+pub use bypass_voting::*;
