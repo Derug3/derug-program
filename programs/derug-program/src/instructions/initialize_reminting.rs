@@ -221,16 +221,16 @@ pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
     ctx.accounts.derug_request.request_status = RequestStatus::UploadingMetadata;
     ctx.accounts.derug_data.derug_status = DerugStatus::UploadingMetadata;
 
-    transfer(
-        CpiContext::new(
-            ctx.accounts.system_program.to_account_info(),
-            Transfer {
-                from: ctx.accounts.payer.to_account_info(),
-                to: ctx.accounts.fee_wallet.to_account_info(),
-            },
-        ),
-        9000000,
-    )?;
+    // transfer(
+    //     CpiContext::new(
+    //         ctx.accounts.system_program.to_account_info(),
+    //         Transfer {
+    //             from: ctx.accounts.payer.to_account_info(),
+    //             to: ctx.accounts.fee_wallet.to_account_info(),
+    //         },
+    //     ),
+    //     9000000,
+    // )?;
 
     Ok(())
 }

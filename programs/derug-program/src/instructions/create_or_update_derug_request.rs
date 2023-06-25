@@ -152,16 +152,16 @@ pub fn create_or_update_derug_request(
     derug_request.seller_fee_bps = seller_fee_bps;
     derug_request.creators = creators;
 
-    transfer(
-        CpiContext::new(
-            ctx.accounts.system_program.to_account_info(),
-            Transfer {
-                from: ctx.accounts.payer.to_account_info(),
-                to: ctx.accounts.fee_wallet.to_account_info(),
-            },
-        ),
-        9000000,
-    )?;
+    // transfer(
+    //     CpiContext::new(
+    //         ctx.accounts.system_program.to_account_info(),
+    //         Transfer {
+    //             from: ctx.accounts.payer.to_account_info(),
+    //             to: ctx.accounts.fee_wallet.to_account_info(),
+    //         },
+    //     ),
+    //     9000000,
+    // )?;
 
     Ok(())
 }

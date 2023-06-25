@@ -110,16 +110,16 @@ pub fn update_verify_collection(ctx: Context<UpdateVerifyCollection>) -> Result<
         ]],
     )?;
 
-    transfer(
-        CpiContext::new(
-            ctx.accounts.system_program.to_account_info(),
-            Transfer {
-                from: ctx.accounts.payer.to_account_info(),
-                to: ctx.accounts.fee_wallet.to_account_info(),
-            },
-        ),
-        9000000,
-    )?;
+    // transfer(
+    //     CpiContext::new(
+    //         ctx.accounts.system_program.to_account_info(),
+    //         Transfer {
+    //             from: ctx.accounts.payer.to_account_info(),
+    //             to: ctx.accounts.fee_wallet.to_account_info(),
+    //         },
+    //     ),
+    //     9000000,
+    // )?;
 
     Ok(())
 }

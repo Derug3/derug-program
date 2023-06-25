@@ -127,16 +127,16 @@ pub fn claim_victory<'a, 'b, 'c, 'info>(
         remint_config.mint_fee_treasury = Some(token_info.key());
     }
 
-    transfer(
-        CpiContext::new(
-            ctx.accounts.system_program.to_account_info(),
-            Transfer {
-                from: ctx.accounts.payer.to_account_info(),
-                to: ctx.accounts.fee_wallet.to_account_info(),
-            },
-        ),
-        9000000,
-    )?;
+    // transfer(
+    //     CpiContext::new(
+    //         ctx.accounts.system_program.to_account_info(),
+    //         Transfer {
+    //             from: ctx.accounts.payer.to_account_info(),
+    //             to: ctx.accounts.fee_wallet.to_account_info(),
+    //         },
+    //     ),
+    //     9000000,
+    // )?;
 
     Ok(())
 }
