@@ -20,10 +20,6 @@ pub fn bypass_voting(ctx: Context<BypassVoting>) -> Result<()> {
 
     derug_data.winning_request = Some(derug_request.key());
 
-    derug_data.derug_status = DerugStatus::Reminting;
-
-    derug_request.request_status = RequestStatus::Reminting;
-
     derug_data.active_requests.push(ActiveRequest {
         request: derug_request.key(),
         winning: true,

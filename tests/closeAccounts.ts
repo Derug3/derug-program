@@ -18,7 +18,7 @@ async function closeAccounts() {
 
   const program = new Program<DerugProgram>(
     IDL,
-    new PublicKey("4T3FDpLEQQk6LHLP3Bx7Ako91rGE7CSN4ntusgBmhgoW"),
+    new PublicKey("DERUGwXJu3m1DG1VNq4gP7Ppkza95P7XbeujbtSNAebu"),
     new AnchorProvider(connection, new NodeWallet(payer), {})
   );
 
@@ -38,7 +38,7 @@ async function closeAccounts() {
     [
       Buffer.from("derug-data"),
       derugData.toBuffer(),
-      new PublicKey("A6DHb3s8VKSKV3cC58xYzLooyVsLuKCrWwQEe2ZdbEZg").toBuffer(),
+      new PublicKey("DRG3YRmurqpWQ1jEjK8DiWMuqPX9yL32LXLbuRdoiQwt").toBuffer(),
     ],
     program.programId
   );
@@ -48,42 +48,43 @@ async function closeAccounts() {
     program.programId
   );
 
-  for (const cvr of chunkedVoteRecords) {
-    const remainingAccounts: AccountMeta[] = cvr.map((vr) => {
-      return {
-        isSigner: false,
-        isWritable: true,
-        pubkey: vr.publicKey,
-      };
+  // for (const cvr of chunkedVoteRecords) {
+  // const remainingAccounts: AccountMeta[] = cvr.map((vr) => {
+  //   return {
+  //     isSigner: false,
+  //     isWritable: true,
+  //     pubkey: vr.publicKey,
+  //   };
+  // });
+
+  const ix = program.instruction.closeProgramAccount({
+    accounts: {
+      derugData,
+      derugRequest,
+      payer: payer.publicKey,
+      remintConfig,
+    },
+    // remainingAccounts: remainingAccounts,
+  });
+
+  try {
+    const tx = new Transaction({
+      feePayer: payer.publicKey,
+      recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
     });
+    tx.add(ix);
+    const txSim = await connection.simulateTransaction(tx);
+    console.log(txSim.value.logs);
 
-    const ix = program.instruction.closeProgramAccount({
-      accounts: {
-        derugData,
-        derugRequest,
-        payer: payer.publicKey,
-        remintConfig,
-      },
-      remainingAccounts: remainingAccounts,
-    });
+    // tx.add(ix);
 
-    try {
-      const tx = new Transaction({
-        feePayer: payer.publicKey,
-        recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
-      });
-      tx.add(ix);
-      const txSim = await connection.simulateTransaction(tx);
-      console.log(txSim.value.logs);
-
-      // tx.add(ix);
-
-      const txSig = await connection.sendTransaction(tx, [payer]);
-      await connection.confirmTransaction(txSig);
-    } catch (error) {
-      console.log(error);
-    }
+    const txSig = await connection.sendTransaction(tx, [payer]);
+    await connection.confirmTransaction(txSig);
+    console.log(txSig);
+  } catch (error) {
+    console.log(error);
   }
+  // }
 }
 
 closeAccounts();

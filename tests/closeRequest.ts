@@ -16,7 +16,7 @@ async function closeAccounts() {
 
   const program = new Program<DerugProgram>(
     IDL,
-    new PublicKey("4T3FDpLEQQk6LHLP3Bx7Ako91rGE7CSN4ntusgBmhgoW"),
+    new PublicKey("DERUGwXJu3m1DG1VNq4gP7Ppkza95P7XbeujbtSNAebu"),
     new AnchorProvider(connection, new NodeWallet(payer), {})
   );
 
@@ -37,7 +37,7 @@ async function closeAccounts() {
     [
       Buffer.from("derug-data"),
       derugData.toBuffer(),
-      new PublicKey("31hGE85HasBGpXRz1xxeczAJZmeW4HDS8VRCY5odqZVg").toBuffer(),
+      new PublicKey("6x1bmYkoPFs2oWjoRg7v4NAW4pzjxid2DVooyJmC4emH").toBuffer(),
     ],
     program.programId
   );

@@ -14,7 +14,7 @@ use anchor_spl::token::{
 
 use mpl_token_metadata::{
     instruction::{create_master_edition_v3, create_metadata_accounts_v3},
-    state::{Creator, Metadata, TokenMetadataAccount, EDITION, PREFIX},
+    state::{Collection, Creator, Metadata, TokenMetadataAccount, EDITION, PREFIX},
     ID as METADATA_PROGRAM_ID,
 };
 use solana_program::program::{invoke, invoke_signed};
@@ -251,7 +251,10 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
             .unwrap(),
         true,
         true,
-        None,
+        Some(Collection {
+            key: ctx.accounts.new_collection.key(),
+            verified: false,
+        }),
         None,
         None,
     );

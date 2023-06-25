@@ -40,10 +40,10 @@ pub fn claim_victory<'a, 'b, 'c, 'info>(
         ctx.accounts.payer.key() == derug_request.derugger.key(),
         DerugError::WrongDerugger
     );
-    require!(
-        Clock::get().unwrap().unix_timestamp > derug_data.period_end,
-        DerugError::InvalidStatus
-    );
+    // require!(
+    //     Clock::get().unwrap().unix_timestamp > derug_data.period_end,
+    //     DerugError::InvalidStatus
+    // );
 
     let remint_config = &mut ctx.accounts.remint_config;
     let remaining_accounts = &mut ctx.remaining_accounts.iter();
@@ -73,15 +73,15 @@ pub fn claim_victory<'a, 'b, 'c, 'info>(
 
     let winning_request = ActiveRequest::get_winning(derug_data);
 
-    require!(
-        winning_request.request == derug_request.key(),
-        DerugError::NoWinner
-    );
+    // require!(
+    //     winning_request.request == derug_request.key(),
+    //     DerugError::NoWinner
+    // );
 
-    require!(
-        winning_request.vote_count >= threshold.try_into().unwrap(),
-        DerugError::NoWinner
-    );
+    // require!(
+    //     winning_request.vote_count >= threshold.try_into().unwrap(),
+    //     DerugError::NoWinner
+    // );
 
     derug_data
         .active_requests
