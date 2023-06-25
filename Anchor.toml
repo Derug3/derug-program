@@ -2,14 +2,53 @@
 seeds = false
 skip-lint = false
 [programs.localnet]
-derug_program = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+derug_program = "8spRpt6yfwWjE8BAyR9jX1xFkVLjQcmijVha6hqQPVMU"
 
-[registry]
-url = "https://api.apr.dev"
+
 
 [provider]
 cluster = "Localnet"
-wallet = "/Users/gorangutovic/.config/solana/id.json"
+wallet= "/Users/gorangutovic/Desktop/programs/derug-program/wallet/keypair.json"
+# wallet = "/Users/zazza/Coding/other/derug-program/wallet/keypair.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+
+[test.validator]
+url="https://api.devnet.solana.com"
+
+#NFT MINT
+[[test.validator.clone]]
+address = '884Rqxkc4fS6zEAHMfwhTNFcda7Tzp3yRXp9Cq3s3sfx'
+# #NFT Metadata
+[[test.validator.clone]]
+address = '8wd9jJoygdV2wKis8iu61SYWTQ4ePEKEhBkF57jsHa8'
+#NFT Token Account
+[[test.validator.clone]]
+address = '7GL1fEXnFmfJFUEqeH8ekPT9VtZZHFicYr8SLb6WFvD7'
+#Collection
+[[test.validator.clone]]
+address = '2hxtFTNNULe3YcULVS9WaNgtoZkxMbhyS6Nb9fecMku3'
+#Collection metadata
+[[test.validator.clone]]
+address = 'CmyGoAVDqSJPKfrQqu1TuQnf3PD8oAhB4edqxkDnMoqf'
+# #Old nft master edition
+[[test.validator.clone]]
+address = 'J9FTpV7M9bX9gQujSkQBPPgQuHj9QRPqggm7VVu3XPus'
+
+[[test.genesis]]
+address="metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+program="./tests/fixtures/mpl_token_metadata.so"
+
+
+#Devnet USDC token account
+[[test.validator.clone]]
+address="4xmPwMQzLTGyefmFPjbFeYqfSWwZrtpBAMEC8ga9ubwV"
+
+#Devnet USDC mint
+[[test.validator.clone]]
+address="4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
+
+[[test.genesis]]
+address="cndy3Z4yapfJBmL3ShUp5exZKqR3z33thTzeNMm2gRZ"
+program="./tests/fixtures/candyMachine.so"
