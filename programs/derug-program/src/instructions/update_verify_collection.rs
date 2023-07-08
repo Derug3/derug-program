@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-use anchor_lang::system_program::{transfer, Transfer};
 use anchor_spl::token::Mint;
 use mpl_token_metadata::instruction::verify_sized_collection_item;
 use mpl_token_metadata::state::EDITION;
@@ -109,17 +108,6 @@ pub fn update_verify_collection(ctx: Context<UpdateVerifyCollection>) -> Result<
             &[*ctx.bumps.get(&"pda_authority".to_string()).unwrap()],
         ]],
     )?;
-
-    // transfer(
-    //     CpiContext::new(
-    //         ctx.accounts.system_program.to_account_info(),
-    //         Transfer {
-    //             from: ctx.accounts.payer.to_account_info(),
-    //             to: ctx.accounts.fee_wallet.to_account_info(),
-    //         },
-    //     ),
-    //     9000000,
-    // )?;
 
     Ok(())
 }

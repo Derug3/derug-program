@@ -22,24 +22,16 @@ pub mod derug_program {
 
     pub fn create_or_update_derug_request(
         ctx: Context<CreateOrUpdateDerugRequest>,
-        utility_dtos: Vec<UpdateUtilityDataDto>,
-        seller_fee_bps: u32,
-        public_mint_price: Option<u64>,
-        private_mint_duration: Option<i64>,
         new_name: String,
         new_symbol: String,
-        wallet_limit: Option<u8>,
         creators: Vec<DeruggerCreator>,
+        mint_config: MintConfig,
     ) -> Result<()> {
         instructions::create_or_update_derug_request(
             ctx,
-            utility_dtos,
             new_name,
             new_symbol,
-            seller_fee_bps,
-            public_mint_price,
-            private_mint_duration,
-            wallet_limit,
+            mint_config,
             creators,
         )
     }

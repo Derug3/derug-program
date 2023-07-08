@@ -8,16 +8,26 @@ pub struct DerugRequest {
     pub derugger: Pubkey,
     pub created_at: i64,
     pub vote_count: u32,
-    pub wallet_limit: Option<u8>,
     pub request_status: RequestStatus,
-    pub mint_price: Option<u64>,
-    pub mint_currency: Option<Pubkey>,
-    pub private_mint_duration: Option<i64>,
     pub creators: Vec<DeruggerCreator>,
-    pub seller_fee_bps: u32,
-    pub utility_data: Vec<UtilityData>,
+    pub mint_config: MintConfig,
 }
 
+#[derive(AnchorDeserialize, AnchorSerialize, Debug, Clone)]
+pub struct MintConfig {
+    pub public_mint_price: u64,
+    pub mint_currency: Pubkey,
+    pub remint_duration: u32,
+    pub seller_fee_bps: u8,
+    pub whitelist_config: Option<WhitelistConfig>,
+}
+
+#[derive(AnchorDeserialize, AnchorSerialize, Debug, Clone)]
+pub struct WhitelistConfig {
+    pub price: u64,
+    pub currency: Pubkey,
+    pub duration: u32,
+}
 #[account]
 pub struct RemintConfig {
     pub derug_request: Pubkey,
@@ -75,16 +85,6 @@ pub trait AccountLen {
     fn current_data_len(&self) -> usize;
 }
 
-impl AccountLen for Account<'_, DerugRequest> {
-    fn length(&self) -> usize {
-        self.try_to_vec().unwrap().len()
-    }
-
-    fn current_data_len(&self) -> usize {
-        self.utility_data.try_to_vec().unwrap().len() + FIXED_LEN
-    }
-}
-
 #[derive(AnchorDeserialize, AnchorSerialize, Clone)]
 pub struct UpdateUtilityDataDto {
     pub title: String,
@@ -110,5 +110,4 @@ pub struct NftRemintedEvent {
 #[event]
 pub struct PrivateMintStarted {
     pub derug_data: Pubkey,
-    pub remint_config: Pubkey,
 }

@@ -6,10 +6,7 @@ use crate::{
         derug_request::{DerugRequest, RemintConfig, RequestStatus},
     },
 };
-use anchor_lang::{
-    prelude::*,
-    system_program::{transfer, Transfer},
-};
+use anchor_lang::{prelude::*, system_program::Transfer};
 use anchor_spl::token::{
     initialize_account, initialize_mint, mint_to, InitializeAccount, InitializeMint, MintTo, Token,
 };
@@ -220,17 +217,6 @@ pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
 
     ctx.accounts.derug_request.request_status = RequestStatus::UploadingMetadata;
     ctx.accounts.derug_data.derug_status = DerugStatus::UploadingMetadata;
-
-    // transfer(
-    //     CpiContext::new(
-    //         ctx.accounts.system_program.to_account_info(),
-    //         Transfer {
-    //             from: ctx.accounts.payer.to_account_info(),
-    //             to: ctx.accounts.fee_wallet.to_account_info(),
-    //         },
-    //     ),
-    //     9000000,
-    // )?;
 
     Ok(())
 }

@@ -1,4 +1,3 @@
-use std::cmp::Ordering;
 
 use anchor_lang::prelude::*;
 use mpl_token_metadata::state::{MAX_NAME_LENGTH, MAX_SYMBOL_LENGTH, MAX_URI_LENGTH};
@@ -55,7 +54,7 @@ pub enum DerugStatus {
     Completed,
 }
 
-#[derive(AnchorDeserialize, AnchorSerialize, Clone, PartialEq, PartialOrd,Debug)]
+#[derive(AnchorDeserialize, AnchorSerialize,Debug,Clone)]
 
 pub struct ActiveRequest {
     pub request: Pubkey,
@@ -63,22 +62,7 @@ pub struct ActiveRequest {
     pub winning: bool
 }
 
-impl Eq for ActiveRequest {
-    fn assert_receiver_is_total_eq(&self) {
-        todo!()
-    }
-}
 
-impl Ord for ActiveRequest {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-       if self.vote_count >= other.vote_count {
-            Ordering::Greater
-       } else  {
-            Ordering::Less
-       } 
-
-    }
-}
 
 impl ActiveRequest{
     pub fn get_winning(derug_data:&DerugData)->&Self{

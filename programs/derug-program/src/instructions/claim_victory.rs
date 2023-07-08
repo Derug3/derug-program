@@ -1,17 +1,13 @@
-use anchor_lang::{
-    prelude::*,
-    system_program::{transfer, Transfer},
-};
+use anchor_lang::prelude::*;
 
-use anchor_spl::token::TokenAccount;
 use itertools::Itertools;
 
 use crate::{
-    constants::{DERUG_DATA_SEED, REMINT_CONFIG_SEED},
+    constants::DERUG_DATA_SEED,
     errors::DerugError,
     state::{
-        derug_data::{ActiveRequest, DerugData, DerugStatus},
-        derug_request::{DerugRequest, RemintConfig, RequestStatus},
+        derug_data::{DerugData, DerugStatus},
+        derug_request::{DerugRequest, RequestStatus},
     },
 };
 
@@ -23,8 +19,6 @@ pub struct ClaimVictory<'info> {
     pub derug_data: Box<Account<'info, DerugData>>,
     #[account(mut)]
     pub payer: Signer<'info>,
-    #[account(init,seeds=[REMINT_CONFIG_SEED,derug_data.key().as_ref()],payer=payer,bump,space=RemintConfig::LEN)]
-    pub remint_config: Account<'info, RemintConfig>,
     ///CHECK
     #[account(mut, address="DRG3YRmurqpWQ1jEjK8DiWMuqPX9yL32LXLbuRdoiQwt".parse::<Pubkey>().unwrap())]
     pub fee_wallet: AccountInfo<'info>,
@@ -40,48 +34,6 @@ pub fn claim_victory<'a, 'b, 'c, 'info>(
         ctx.accounts.payer.key() == derug_request.derugger.key(),
         DerugError::WrongDerugger
     );
-    // require!(
-    //     Clock::get().unwrap().unix_timestamp > derug_data.period_end,
-    //     DerugError::InvalidStatus
-    // );
-
-    let remint_config = &mut ctx.accounts.remint_config;
-    let remaining_accounts = &mut ctx.remaining_accounts.iter();
-
-    if let Some(candy_machine_info) = remaining_accounts.next() {
-        let candy_machine_creator = remaining_accounts.next().unwrap();
-
-        remint_config.authority = ctx.accounts.payer.key();
-        remint_config.candy_machine_key = candy_machine_info.key();
-        remint_config.candy_machine_creator = candy_machine_creator.key();
-
-        remint_config.public_mint_price = derug_request.mint_price;
-        remint_config.new_name = derug_request.new_name.clone();
-        remint_config.new_symbol = derug_request.new_symbol.clone();
-        remint_config.seller_fee_bps = derug_request.seller_fee_bps;
-        remint_config.mint_currency = derug_request.mint_currency;
-        remint_config.derug_request = derug_request.key();
-        remint_config.creators = derug_request.creators.clone();
-        remint_config.wallet_limit = derug_request.wallet_limit;
-    }
-
-    //Set the percentage
-    let threshold = derug_data
-        .total_supply
-        .checked_div(derug_data.threshold_denominator as u32)
-        .unwrap();
-
-    let winning_request = ActiveRequest::get_winning(derug_data);
-
-    // require!(
-    //     winning_request.request == derug_request.key(),
-    //     DerugError::NoWinner
-    // );
-
-    // require!(
-    //     winning_request.vote_count >= threshold.try_into().unwrap(),
-    //     DerugError::NoWinner
-    // );
 
     derug_data
         .active_requests
@@ -116,27 +68,6 @@ pub fn claim_victory<'a, 'b, 'c, 'info>(
 
     derug_data.derug_status = DerugStatus::Succeeded;
     derug_request.request_status = RequestStatus::Succeeded;
-
-    if let Some(mint_currency) = derug_request.mint_currency {
-        let token_info = remaining_accounts.next().unwrap();
-        let token = Account::<TokenAccount>::try_from(token_info).unwrap();
-        require!(
-            token.mint == mint_currency,
-            DerugError::InvalidTokenAccountMint
-        );
-        remint_config.mint_fee_treasury = Some(token_info.key());
-    }
-
-    // transfer(
-    //     CpiContext::new(
-    //         ctx.accounts.system_program.to_account_info(),
-    //         Transfer {
-    //             from: ctx.accounts.payer.to_account_info(),
-    //             to: ctx.accounts.fee_wallet.to_account_info(),
-    //         },
-    //     ),
-    //     9000000,
-    // )?;
 
     Ok(())
 }
