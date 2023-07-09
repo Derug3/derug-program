@@ -13,9 +13,8 @@ use anchor_lang::system_program::{transfer, Transfer};
 use anchor_spl::token::Mint;
 
 #[derive(Accounts)]
-#[instruction(utility_dtos:Vec<UpdateUtilityDataDto>)]
 pub struct CreateOrUpdateDerugRequest<'info> {
-    #[account(init_if_needed, seeds=[DERUG_DATA_SEED, derug_data.key().as_ref(), payer.key().as_ref()], bump, payer=payer, space =  current_data_len(derug_request,utility_dtos))]
+    #[account(init_if_needed, seeds=[DERUG_DATA_SEED, derug_data.key().as_ref(), payer.key().as_ref()], bump, payer=payer, space =  current_data_len(derug_request,vec![]))]
     pub derug_request: Account<'info, DerugRequest>,
     #[account(mut, seeds =[DERUG_DATA_SEED, derug_data.collection.key().as_ref()], bump)]
     pub derug_data: Box<Account<'info, DerugData>>,
@@ -47,11 +46,6 @@ pub fn create_or_update_derug_request(
     derug_request.new_symbol = new_symbol;
 
     derug_request.derugger = ctx.accounts.payer.key();
-
-    require!(
-        derug_data.period_end > derug_request.created_at,
-        DerugError::TimeIsOut
-    );
 
     derug_data.total_suggestion_count = derug_data.total_suggestion_count.checked_add(1).unwrap();
 

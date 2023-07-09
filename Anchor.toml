@@ -2,7 +2,7 @@
 seeds = false
 skip-lint = false
 [programs.localnet]
-derug_program = "8spRpt6yfwWjE8BAyR9jX1xFkVLjQcmijVha6hqQPVMU"
+derug_program = "DERUGwXJu3m1DG1VNq4gP7Ppkza95P7XbeujbtSNAebu"
 
 
 
@@ -12,7 +12,7 @@ wallet= "/Users/gorangutovic/Desktop/programs/derug-program/wallet/keypair.json"
 # wallet = "/Users/zazza/Coding/other/derug-program/wallet/keypair.json"
 
 [scripts]
-test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/derug-program.ts"
 
 [test.validator]
 url="https://api.devnet.solana.com"

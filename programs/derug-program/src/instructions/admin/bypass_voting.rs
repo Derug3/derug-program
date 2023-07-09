@@ -8,7 +8,7 @@ pub struct BypassVoting<'info> {
     pub derug_request: Box<Account<'info, DerugRequest>>,
     #[account(mut,seeds=[DERUG_DATA_SEED,derug_data.collection.key().as_ref()],bump)]
     pub derug_data: Box<Account<'info, DerugData>>,
-    #[account(address=PLATFORM_AUTHORITY.parse::<Pubkey>().unwrap())]
+    #[account()]
     pub payer: Signer<'info>,
 }
 
@@ -20,13 +20,11 @@ pub fn bypass_voting(ctx: Context<BypassVoting>) -> Result<()> {
 
     derug_data.winning_request = Some(derug_request.key());
 
-    derug_data.active_requests.push(ActiveRequest {
-        request: derug_request.key(),
-        winning: true,
-        vote_count: total_supply,
-    });
-
     derug_request.vote_count = total_supply as u32;
+
+    derug_request.request_status = RequestStatus::Succeeded;
+
+    derug_data.derug_status = DerugStatus::Succeeded;
 
     Ok(())
 }

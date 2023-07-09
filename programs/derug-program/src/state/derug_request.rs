@@ -13,12 +13,21 @@ pub struct DerugRequest {
     pub mint_config: MintConfig,
 }
 
+#[account]
+pub struct RemintProof {
+    pub derug_data: Pubkey,
+    pub reminter: Pubkey,
+    pub old_mint: Pubkey,
+    pub new_mint: Pubkey,
+}
+
 #[derive(AnchorDeserialize, AnchorSerialize, Debug, Clone)]
 pub struct MintConfig {
+    pub candy_machine_key: Pubkey,
     pub public_mint_price: u64,
     pub mint_currency: Pubkey,
-    pub remint_duration: u32,
-    pub seller_fee_bps: u8,
+    pub remint_duration: i64,
+    pub seller_fee_bps: u16,
     pub whitelist_config: Option<WhitelistConfig>,
 }
 

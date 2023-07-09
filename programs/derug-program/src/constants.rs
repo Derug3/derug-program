@@ -16,3 +16,5 @@ pub const VOTING_TIME: i64 = 90;
 pub const METADATA_UPLOADER: &str = "KQ1jcFYvnH9DNUzBfVbquRohP9uZ6C7DVJJDyqiGB4P";
 
 pub const PLATFORM_AUTHORITY: &str = "DRG3YRmurqpWQ1jEjK8DiWMuqPX9yL32LXLbuRdoiQwt";
+
+pub const DERUG: &[u8] = b"derug";

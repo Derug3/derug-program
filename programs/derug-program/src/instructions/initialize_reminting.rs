@@ -1,20 +1,19 @@
 use crate::{
-    constants::{AUTHORITY_SEED, DERUG_DATA_SEED, REMINT_CONFIG_SEED},
+    constants::DERUG_DATA_SEED,
     errors::DerugError,
     state::{
         derug_data::{DerugData, DerugStatus},
-        derug_request::{DerugRequest, RemintConfig, RequestStatus},
+        derug_request::{DerugRequest, RequestStatus},
     },
 };
 use anchor_lang::{prelude::*, system_program::Transfer};
 use anchor_spl::token::{
-    initialize_account, initialize_mint, mint_to, InitializeAccount, InitializeMint, MintTo, Token,
+    initialize_account, initialize_mint, mint_to, InitializeAccount, InitializeMint, Mint, MintTo,
+    Token, TokenAccount,
 };
 
 use mpl_token_metadata::{
-    instruction::{
-        approve_collection_authority, create_master_edition_v3, create_metadata_accounts_v3,
-    },
+    instruction::{create_master_edition_v3, create_metadata_accounts_v3},
     state::{Creator, EDITION, PREFIX},
     ID as METADATA_PROGRAM_ID,
 };
@@ -26,35 +25,24 @@ pub struct InitializeReminting<'info> {
     pub derug_request: Account<'info, DerugRequest>,
     #[account(mut,seeds=[DERUG_DATA_SEED,derug_data.collection.key().as_ref()],bump)]
     pub derug_data: Box<Account<'info, DerugData>>,
-    #[account(mut)]
+    #[account(init,mint::authority=payer.key(),mint::freeze_authority=payer.key(),mint::decimals=0,payer=payer)]
     ///CHECK
-    pub new_collection: UncheckedAccount<'info>,
+    pub new_collection: Account<'info, Mint>,
     ///CHECK
-    #[account(mut)]
-    pub token_account: UncheckedAccount<'info>,
+    #[account(init,payer=payer,token::authority=payer.to_account_info(),token::mint=new_collection.to_account_info())]
+    pub token_account: Account<'info, TokenAccount>,
     ///CHECK
     #[account(mut,seeds=[PREFIX.as_ref(), METADATA_PROGRAM_ID.as_ref(), new_collection.key().as_ref(), EDITION.as_ref()],bump, seeds::program = METADATA_PROGRAM_ID)]
     pub master_edition: UncheckedAccount<'info>,
     ///CHECK
     #[account(mut,seeds=[PREFIX.as_ref(), METADATA_PROGRAM_ID.as_ref(), new_collection.key().as_ref()], bump,seeds::program = METADATA_PROGRAM_ID)]
     pub metadata_account: UncheckedAccount<'info>,
-
-    #[account(seeds=[DERUG_DATA_SEED,derug_request.key().as_ref(),AUTHORITY_SEED],bump)]
-    ///CHECK
-    pub pda_authority: UncheckedAccount<'info>,
-    #[account(mut,seeds=[REMINT_CONFIG_SEED,derug_data.key().as_ref()],bump)]
-    pub remint_config: Account<'info, RemintConfig>,
-
-    #[account(mut)]
-    ///CHECK
-    pub collection_authority_record: UncheckedAccount<'info>,
     #[account(mut)]
     pub payer: Signer<'info>,
     pub system_program: Program<'info, System>,
     ///CHECK
     #[account(mut, address="DRG3YRmurqpWQ1jEjK8DiWMuqPX9yL32LXLbuRdoiQwt".parse::<Pubkey>().unwrap())]
     pub fee_wallet: AccountInfo<'info>,
-
     ///CHECK
     #[account(address = METADATA_PROGRAM_ID)]
     pub metadata_program: UncheckedAccount<'info>,
@@ -72,8 +60,6 @@ pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
         ctx.accounts.derug_request.request_status == RequestStatus::Succeeded,
         DerugError::NoWinner
     );
-
-    ctx.accounts.remint_config.collection = ctx.accounts.new_collection.key();
 
     anchor_lang::system_program::transfer(
         CpiContext::new(
@@ -97,29 +83,6 @@ pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
     )?;
 
     ctx.accounts.derug_data.new_collection = Some(ctx.accounts.new_collection.key());
-
-    initialize_mint(
-        CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            InitializeMint {
-                mint: ctx.accounts.new_collection.to_account_info(),
-                rent: ctx.accounts.rent.to_account_info(),
-            },
-        ),
-        0,
-        ctx.accounts.payer.key,
-        Some(ctx.accounts.payer.key),
-    )?;
-
-    initialize_account(CpiContext::new(
-        ctx.accounts.token_account.to_account_info(),
-        InitializeAccount {
-            account: ctx.accounts.token_account.to_account_info(),
-            authority: ctx.accounts.payer.to_account_info(),
-            mint: ctx.accounts.new_collection.to_account_info(),
-            rent: ctx.accounts.rent.to_account_info(),
-        },
-    ))?;
 
     mint_to(
         CpiContext::new(
@@ -194,26 +157,26 @@ pub fn initialize_reminting(ctx: Context<InitializeReminting>) -> Result<()> {
         ],
     )?;
 
-    let approve_collection_authority_ix = approve_collection_authority(
-        ctx.accounts.metadata_program.key(),
-        ctx.accounts.collection_authority_record.key(),
-        ctx.accounts.pda_authority.key(),
-        ctx.accounts.payer.key(),
-        ctx.accounts.payer.key(),
-        ctx.accounts.metadata_account.key(),
-        ctx.accounts.new_collection.key(),
-    );
+    // let approve_collection_authority_ix = approve_collection_authority(
+    //     ctx.accounts.metadata_program.key(),
+    //     ctx.accounts.collection_authority_record.key(),
+    //     ctx.accounts.pda_authority.key(),
+    //     ctx.accounts.payer.key(),
+    //     ctx.accounts.payer.key(),
+    //     ctx.accounts.metadata_account.key(),
+    //     ctx.accounts.new_collection.key(),
+    // );
 
-    let approve_accounts = vec![
-        ctx.accounts.metadata_account.to_account_info(),
-        ctx.accounts.collection_authority_record.to_account_info(),
-        ctx.accounts.pda_authority.to_account_info(),
-        ctx.accounts.payer.to_account_info(),
-        ctx.accounts.metadata_account.to_account_info(),
-        ctx.accounts.new_collection.to_account_info(),
-    ];
+    // let approve_accounts = vec![
+    //     ctx.accounts.metadata_account.to_account_info(),
+    //     ctx.accounts.collection_authority_record.to_account_info(),
+    //     ctx.accounts.pda_authority.to_account_info(),
+    //     ctx.accounts.payer.to_account_info(),
+    //     ctx.accounts.metadata_account.to_account_info(),
+    //     ctx.accounts.new_collection.to_account_info(),
+    // ];
 
-    invoke(&approve_collection_authority_ix, &approve_accounts)?;
+    // invoke(&approve_collection_authority_ix, &approve_accounts)?;
 
     ctx.accounts.derug_request.request_status = RequestStatus::UploadingMetadata;
     ctx.accounts.derug_data.derug_status = DerugStatus::UploadingMetadata;

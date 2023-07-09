@@ -25,6 +25,12 @@ pub fn init_private_mint(ctx: Context<InitPrivateMint>) -> Result<()> {
     derug_data.derug_status = DerugStatus::Reminting;
     derug_request.request_status = RequestStatus::Reminting;
 
+    derug_request.mint_config.remint_duration = derug_request
+        .mint_config
+        .remint_duration
+        .checked_add(Clock::get().unwrap().unix_timestamp)
+        .unwrap();
+
     emit!(PrivateMintStarted {
         derug_data: ctx.accounts.derug_data.key(),
     });

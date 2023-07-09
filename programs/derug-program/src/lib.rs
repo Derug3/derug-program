@@ -62,10 +62,6 @@ pub mod derug_program {
         instructions::remint_nft(ctx, new_name, new_uri)
     }
 
-    pub fn update_verify_collection(ctx: Context<UpdateVerifyCollection>) -> Result<()> {
-        instructions::update_verify_collection(ctx)
-    }
-
     pub fn close_program_account<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, CloseProgramAccount<'info>>,
     ) -> Result<()> {
