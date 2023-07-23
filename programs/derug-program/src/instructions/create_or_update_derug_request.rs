@@ -5,7 +5,7 @@ use crate::state::RequestStatus;
 
 use crate::{
     constants::DERUG_DATA_SEED,
-    state::{DerugData, DerugRequest, UpdateUtilityDataDto},
+    state::{DerugData, DerugRequest},
     utilities::current_data_len,
 };
 use anchor_lang::prelude::*;

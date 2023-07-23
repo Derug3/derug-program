@@ -6,8 +6,10 @@ import clubWallet from "../wallet/clubWallet.json";
 import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from "@solana/web3.js";
 import {
   claimVictoryIx,
+  createCm,
   createDerugRequest,
   initDerugData,
+  insertItems,
   remintNft,
   sendTransaction,
 } from "./helpers";
@@ -65,13 +67,10 @@ describe("derug-program", () => {
       programId
     );
 
-    await remintNft(
-      connection,
-      derugRequest,
-      derugData,
-      mpx,
-      reminter,
-      programId
-    );
+    const cm = await createCm(collectionExer, derugger);
+
+    console.log(cm.toString());
+
+    await insertItems(derugger, mpx, new PublicKey(cm));
   });
 });

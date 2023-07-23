@@ -1,5 +1,8 @@
 import { Metaplex } from "@metaplex-foundation/js";
-import { Metadata } from "@metaplex-foundation/mpl-token-metadata";
+import {
+  Metadata,
+  TokenStandard,
+} from "@metaplex-foundation/mpl-token-metadata";
 import {
   createAssociatedTokenAccount,
   createMint,
@@ -31,6 +34,23 @@ import {
   DerugRequest,
 } from "../src/generated";
 import { feeWallet, metaplexProgram } from "./derug-program";
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
+import {
+  addConfigLines,
+  create,
+  fetchCandyMachine,
+  mplCandyMachine,
+} from "derug-tech-mpl-candy-machine";
+import {
+  createNoopSigner,
+  createSignerFromKeypair,
+  generateSigner,
+  percentAmount,
+  publicKey,
+  signerIdentity,
+} from "@metaplex-foundation/umi";
+
+export const umi = createUmi("http://localhost:8899").use(mplCandyMachine());
 
 export const sendTransaction = async (
   connection: Connection,
@@ -365,4 +385,62 @@ export const remintNft = async (
     payer,
     [newToken, newMint]
   );
+};
+
+export const createCm = async (collectionMint: PublicKey, payer: Keypair) => {
+  umi.use(
+    signerIdentity(
+      createSignerFromKeypair(umi, {
+        publicKey: publicKey(payer.publicKey),
+        secretKey: payer.secretKey,
+      })
+    )
+  );
+  const cm = generateSigner(umi);
+  const res = await (
+    await create(umi, {
+      candyMachine: cm,
+      collectionMint: publicKey(collectionMint),
+      collectionUpdateAuthority: createNoopSigner(publicKey(payer.publicKey)),
+      configLineSettings: {
+        isSequential: true,
+        nameLength: 5,
+        prefixName: "DeGods",
+        prefixUri: "https://metadata.degods.com/g/",
+        uriLength: 9,
+      },
+      creators: [
+        {
+          address: publicKey(payer.publicKey),
+          percentageShare: 100,
+          verified: false,
+        },
+      ],
+      itemsAvailable: 217,
+      sellerFeeBasisPoints: percentAmount(40, 2),
+      tokenStandard: TokenStandard.ProgrammableNonFungible,
+    })
+  ).sendAndConfirm(umi);
+
+  return cm.publicKey;
+};
+
+export const insertItems = async (
+  payer: Keypair,
+  mpx: Metaplex,
+  cmKey: PublicKey
+) => {
+  const nfts = await mpx.nfts().findAllByOwner({ owner: payer.publicKey });
+
+  for (const [index, nft] of nfts.entries()) {
+    addConfigLines(umi, {
+      candyMachine: publicKey(cmKey),
+      configLines: [
+        { name: ` #` + nft.name.split("#")[1], uri: nft.uri.split("/")[4] },
+      ],
+      index: index,
+    }).sendAndConfirm(umi);
+  }
+  await new Promise((resolve) => setTimeout(resolve, 6000));
+  const candyMachine = await fetchCandyMachine(umi, publicKey(cmKey));
 };

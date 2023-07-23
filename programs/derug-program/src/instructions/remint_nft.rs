@@ -2,28 +2,29 @@ use crate::{
     constants::{AUTHORITY_SEED, DERUG, DERUG_DATA_SEED},
     errors::DerugError,
     state::{
-        derug_data::{DerugData, DerugStatus},
-        derug_request::{DerugRequest, NftRemintedEvent, RemintProof, RequestStatus},
+        derug_data::DerugData,
+        derug_request::{DerugRequest, NftRemintedEvent, RemintProof},
     },
 };
 use anchor_lang::{prelude::*, system_program::transfer};
-use anchor_spl::token::{
-    initialize_account, initialize_mint, mint_to, InitializeAccount, InitializeMint, Mint, MintTo,
-    Token, TokenAccount,
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token::{Mint, Token, TokenAccount},
+};
+use mpl_token_metadata::{
+    instruction::{
+        builders::{BurnBuilder, CreateBuilder, MintBuilder, VerifyBuilder},
+        BurnArgs, CreateArgs, InstructionBuilder, MintArgs, VerificationArgs,
+    },
+    state::AssetData,
 };
 use std::mem::size_of;
 
 use mpl_token_metadata::{
-    instruction::{
-        create_master_edition_v3, create_metadata_accounts_v3, verify_sized_collection_item,
-    },
-    state::{Collection, Creator, Metadata, TokenMetadataAccount, EDITION, PREFIX},
+    state::{Collection, Creator, Metadata, TokenMetadataAccount, TokenStandard, EDITION, PREFIX},
     ID as METADATA_PROGRAM_ID,
 };
-use solana_program::{
-    instruction::Instruction,
-    program::{invoke, invoke_signed},
-};
+use solana_program::program::{invoke, invoke_signed};
 
 #[derive(Accounts)]
 pub struct RemintNft<'info> {
@@ -31,8 +32,13 @@ pub struct RemintNft<'info> {
     pub derug_request: Box<Account<'info, DerugRequest>>,
     #[account(mut,seeds=[DERUG_DATA_SEED,derug_data.collection.key().as_ref()],bump)]
     pub derug_data: Box<Account<'info, DerugData>>,
+    #[account(mut)]
+    pub authority: Signer<'info>,
     #[account()]
     pub new_collection: Box<Account<'info, Mint>>,
+    ///CHECK:address checekd
+    #[account(address=derug_request.derugger)]
+    pub derugger: UncheckedAccount<'info>,
     #[account(init,payer=payer,seeds=[DERUG,old_mint.key().as_ref()],bump,space=8+size_of::<RemintProof>())]
     pub remint_proof: Box<Account<'info, RemintProof>>,
     #[account()]
@@ -40,18 +46,17 @@ pub struct RemintNft<'info> {
     pub old_collection: UncheckedAccount<'info>,
     #[account(mut)]
     pub old_mint: Box<Account<'info, Mint>>,
-    #[account(init,payer=payer,mint::authority=payer.key(),mint::freeze_authority=payer.key(),mint::decimals=0)]
-    ///CHECK
-    pub new_mint: Box<Account<'info, Mint>>,
+    #[account()]
+    ///CHECK:initialized by mpl-program
+    pub new_mint: UncheckedAccount<'info>,
     //TODO: Require
     #[account(mut)]
     pub old_token: Box<Account<'info, TokenAccount>>,
-    #[account(init,token::mint=new_mint.to_account_info(),token::authority=payer.to_account_info(),payer=payer)]
-    ///CHECK
-    pub new_token: Box<Account<'info, TokenAccount>>,
-
-    ///CHECK
+    #[account()]
+    ///CHECK:initialized by mpl-program
+    pub new_token: UncheckedAccount<'info>,
     #[account(mut, seeds=[PREFIX.as_ref(), METADATA_PROGRAM_ID.as_ref(), old_mint.key().as_ref()], bump,seeds::program = METADATA_PROGRAM_ID)]
+    ///CHECK:seeds checked
     pub old_metadata: UncheckedAccount<'info>,
     ///CHECK
     #[account(mut, seeds=[PREFIX.as_ref(), METADATA_PROGRAM_ID.as_ref(), new_mint.key().as_ref()], bump,seeds::program = METADATA_PROGRAM_ID)]
@@ -81,11 +86,21 @@ pub struct RemintNft<'info> {
     ///CHECK
     #[account(mut, address = "DRG3YRmurqpWQ1jEjK8DiWMuqPX9yL32LXLbuRdoiQwt".parse::<Pubkey>().unwrap())]
     pub fee_wallet: AccountInfo<'info>,
+    #[account()]
+    ///CHECK
+    pub metaplex_foundation_ruleset: UncheckedAccount<'info>,
+    #[account()]
+    ///CHECK
+    pub metaplex_authorization_rules: UncheckedAccount<'info>,
     ///CHECK
     #[account(address = METADATA_PROGRAM_ID)]
     pub metadata_program: UncheckedAccount<'info>,
     pub rent: Sysvar<'info, Rent>,
     pub token_program: Program<'info, Token>,
+    ///CHECK:checked by mpl_token_metadata
+    pub sysvar_instructions: UncheckedAccount<'info>,
+    ///CHECK:checked by mpl_token_metadata
+    pub spl_ata_program: Program<'info, AssociatedToken>,
 }
 
 pub fn remint_nft<'a, 'b, 'c, 'info>(
@@ -93,7 +108,7 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
     new_name: String,
     new_uri: String,
 ) -> Result<()> {
-    let derug_request = &ctx.accounts.derug_request;
+    let _derug_request = &ctx.accounts.derug_request;
     require!(
         ctx.accounts.old_collection.key() == ctx.accounts.derug_data.collection,
         DerugError::WrongCollection
@@ -151,50 +166,6 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         );
     }
 
-    let mut burn_ix_accounts: Vec<AccountInfo> = vec![
-        ctx.accounts.old_metadata.to_account_info(),
-        ctx.accounts.payer.to_account_info(),
-        ctx.accounts.old_mint.to_account_info(),
-        ctx.accounts.old_token.to_account_info(),
-        ctx.accounts.old_edition.to_account_info(),
-        ctx.accounts.token_program.to_account_info(),
-    ];
-
-    let old_collection = if *ctx.accounts.old_collection.to_account_info().owner == spl_token::ID {
-        let old_collection = ctx.remaining_accounts.iter().next().unwrap();
-        burn_ix_accounts.push(old_collection.clone());
-        Some(old_collection.key())
-    } else {
-        None
-    };
-
-    let burn_ix = mpl_token_metadata::instruction::burn_nft(
-        METADATA_PROGRAM_ID,
-        ctx.accounts.old_metadata.key(),
-        ctx.accounts.payer.key(),
-        ctx.accounts.old_mint.key(),
-        ctx.accounts.old_token.key(),
-        ctx.accounts.old_edition.key(),
-        ctx.accounts.token_program.key(),
-        old_collection,
-    );
-
-    invoke(&burn_ix, &burn_ix_accounts)?;
-
-    mint_to(
-        CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            MintTo {
-                authority: ctx.accounts.payer.to_account_info(),
-                mint: ctx.accounts.new_mint.to_account_info(),
-                to: ctx.accounts.new_token.to_account_info(),
-            },
-        ),
-        1,
-    )?;
-
-    let derug_request = &ctx.accounts.derug_request;
-
     let mut creators_vec: Vec<Creator> = ctx
         .accounts
         .derug_request
@@ -216,77 +187,6 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         },
     );
 
-    let create_metadata = create_metadata_accounts_v3(
-        ctx.accounts.metadata_program.key(),
-        ctx.accounts.new_metadata.key(),
-        ctx.accounts.new_mint.key(),
-        ctx.accounts.payer.key(),
-        ctx.accounts.payer.key(),
-        ctx.accounts.pda_authority.key(),
-        new_name,
-        derug_request.new_symbol.clone(),
-        new_uri,
-        Some(creators_vec),
-        derug_request.mint_config.seller_fee_bps,
-        true,
-        true,
-        Some(Collection {
-            key: ctx.accounts.new_collection.key(),
-            verified: false,
-        }),
-        None,
-        None,
-    );
-
-    invoke_signed(
-        &create_metadata,
-        &[
-            ctx.accounts.new_metadata.to_account_info(),
-            ctx.accounts.new_mint.to_account_info(),
-            ctx.accounts.payer.to_account_info().clone(),
-            ctx.accounts.payer.to_account_info().clone(),
-            ctx.accounts.pda_authority.to_account_info().clone(),
-            ctx.accounts.system_program.to_account_info(),
-        ],
-        &[&[
-            DERUG_DATA_SEED,
-            ctx.accounts.derug_request.key().as_ref(),
-            AUTHORITY_SEED,
-            &[*ctx.bumps.get(&"pda_authority".to_string()).unwrap()],
-        ]],
-    )?;
-
-    let create_master_edition = create_master_edition_v3(
-        ctx.accounts.metadata_program.key(),
-        ctx.accounts.new_edition.key(),
-        ctx.accounts.new_mint.key(),
-        ctx.accounts.pda_authority.key(),
-        ctx.accounts.payer.key(),
-        ctx.accounts.new_metadata.key(),
-        ctx.accounts.payer.key(),
-        Some(0),
-    );
-
-    invoke_signed(
-        &create_master_edition,
-        &[
-            ctx.accounts.new_edition.to_account_info(),
-            ctx.accounts.new_mint.to_account_info(),
-            ctx.accounts.pda_authority.to_account_info().clone(),
-            ctx.accounts.payer.to_account_info().clone(),
-            ctx.accounts.payer.to_account_info().clone(),
-            ctx.accounts.new_metadata.to_account_info(),
-            ctx.accounts.token_program.to_account_info(),
-            ctx.accounts.system_program.to_account_info(),
-        ],
-        &[&[
-            DERUG_DATA_SEED,
-            ctx.accounts.derug_request.key().as_ref(),
-            AUTHORITY_SEED,
-            &[*ctx.bumps.get(&"pda_authority".to_string()).unwrap()],
-        ]],
-    )?;
-
     transfer(
         CpiContext::new(
             ctx.accounts.system_program.to_account_info(),
@@ -305,34 +205,184 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         .checked_add(1)
         .unwrap();
 
-    let set_collection_ix = verify_sized_collection_item(
-        ctx.accounts.metadata_program.key(),
-        ctx.accounts.new_metadata.key(),
-        ctx.accounts.pda_authority.key(),
-        ctx.accounts.payer.key(),
-        ctx.accounts.collection_mint.key(),
-        ctx.accounts.collection_metadata.key(),
-        ctx.accounts.collection_master_edition.key(),
-        None,
-    );
+    let old_collection = if *ctx.accounts.old_collection.to_account_info().owner == spl_token::ID {
+        let old_collection = ctx.remaining_accounts.iter().next().unwrap();
 
-    invoke_signed(
-        &set_collection_ix,
+        Some(old_collection.key())
+    } else {
+        None
+    };
+
+    let mut burn_builder = BurnBuilder::new();
+    burn_builder
+        .authority(ctx.accounts.payer.key())
+        .collection_metadata(ctx.accounts.collection_metadata.key())
+        .master_edition(ctx.accounts.old_edition.key())
+        .metadata(ctx.accounts.old_metadata.key())
+        .mint(ctx.accounts.old_mint.key())
+        .token(ctx.accounts.old_token.key());
+    if old_collection.is_some() {
+        burn_builder.collection_metadata(ctx.accounts.collection_metadata.key());
+    }
+
+    let burn_ix = burn_builder
+        .build(BurnArgs::V1 { amount: 1 })
+        .unwrap()
+        .instruction();
+
+    invoke(
+        &burn_ix,
         &[
-            ctx.accounts.metadata_program.to_account_info(),
-            ctx.accounts.new_metadata.to_account_info(),
-            ctx.accounts.pda_authority.to_account_info(),
             ctx.accounts.payer.to_account_info(),
-            ctx.accounts.pda_authority.to_account_info(),
+            ctx.accounts.collection_metadata.to_account_info(),
+            ctx.accounts.old_metadata.to_account_info(),
+            ctx.accounts.old_edition.to_account_info(),
+            ctx.accounts.old_mint.to_account_info(),
+            ctx.accounts.old_token.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            ctx.accounts.sysvar_instructions.to_account_info(),
+            ctx.accounts.token_program.to_account_info(),
+        ],
+    )?;
+
+    let asset = AssetData {
+        collection: Some(Collection {
+            verified: false,
+            key: ctx.accounts.collection_mint.key(),
+        }),
+        is_mutable: true,
+        primary_sale_happened: false,
+        uses: None,
+        uri: new_uri,
+        collection_details: None,
+        name: new_name,
+        symbol: ctx.accounts.derug_request.new_symbol.clone(),
+        rule_set: Some(ctx.accounts.metaplex_foundation_ruleset.key()),
+        seller_fee_basis_points: ctx.accounts.derug_request.mint_config.seller_fee_bps,
+        token_standard: TokenStandard::ProgrammableNonFungible,
+        creators: Some(creators_vec),
+    };
+
+    let create_ix = CreateBuilder::new()
+        .authority(ctx.accounts.authority.key())
+        .initialize_mint(true)
+        .master_edition(ctx.accounts.new_edition.key())
+        .metadata(ctx.accounts.new_metadata.key())
+        .mint(ctx.accounts.new_mint.key())
+        .payer(ctx.accounts.payer.key())
+        .update_authority(ctx.accounts.authority.key())
+        .update_authority_as_signer(true)
+        .build(CreateArgs::V1 {
+            asset_data: asset,
+            decimals: Some(0),
+            print_supply: None,
+        })
+        .unwrap()
+        .instruction();
+
+    invoke(
+        &create_ix,
+        &[
+            ctx.accounts.authority.to_account_info(),
+            ctx.accounts.new_edition.to_account_info(),
+            ctx.accounts.new_metadata.to_account_info(),
+            ctx.accounts.new_mint.to_account_info(),
+            ctx.accounts.payer.to_account_info(),
+            ctx.accounts.authority.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            ctx.accounts.token_program.to_account_info(),
+            ctx.accounts.sysvar_instructions.to_account_info(),
+        ],
+    )?;
+
+    let mint_ix = MintBuilder::new()
+        .authority(ctx.accounts.authority.key())
+        .authorization_rules(ctx.accounts.metaplex_foundation_ruleset.key())
+        .authorization_rules_program(ctx.accounts.metaplex_authorization_rules.key())
+        .master_edition(ctx.accounts.new_edition.key())
+        .metadata(ctx.accounts.new_metadata.key())
+        .mint(ctx.accounts.new_mint.key())
+        .payer(ctx.accounts.payer.key())
+        .spl_token_program(ctx.accounts.token_program.key())
+        .token(ctx.accounts.new_token.key())
+        .token_owner(ctx.accounts.payer.key())
+        .build(MintArgs::V1 {
+            amount: 1,
+            authorization_data: None,
+        })
+        .unwrap()
+        .instruction();
+
+    invoke(
+        &mint_ix,
+        &[
+            ctx.accounts.new_token.to_account_info(),
+            ctx.accounts.payer.to_account_info(),
+            ctx.accounts.new_metadata.to_account_info(),
+            ctx.accounts.new_edition.to_account_info(),
+            ctx.accounts.new_mint.to_account_info(),
+            ctx.accounts.authority.to_account_info(),
+            ctx.accounts.payer.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            ctx.accounts.sysvar_instructions.to_account_info(),
+            ctx.accounts.token_program.to_account_info(),
+            ctx.accounts.metaplex_authorization_rules.to_account_info(),
+            ctx.accounts.spl_ata_program.to_account_info(),
+        ],
+    )?;
+
+    let verify_collection_ix = VerifyBuilder::new()
+        .authority(ctx.accounts.authority.key())
+        .collection_master_edition(ctx.accounts.collection_master_edition.key())
+        .collection_metadata(ctx.accounts.collection_metadata.key())
+        .collection_mint(ctx.accounts.collection_mint.key())
+        .metadata(ctx.accounts.new_metadata.key())
+        .build(VerificationArgs::CollectionV1 {})
+        .unwrap()
+        .instruction();
+
+    invoke(
+        &verify_collection_ix,
+        &[
+            ctx.accounts.authority.to_account_info(),
+            ctx.accounts.new_mint.to_account_info(),
             ctx.accounts.collection_mint.to_account_info(),
             ctx.accounts.collection_metadata.to_account_info(),
             ctx.accounts.collection_master_edition.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            ctx.accounts.sysvar_instructions.to_account_info(),
+        ],
+    )?;
+
+    let verify_creator = VerifyBuilder::new()
+        .authority(ctx.accounts.first_creator.key())
+        .collection_master_edition(ctx.accounts.collection_master_edition.key())
+        .collection_metadata(ctx.accounts.collection_metadata.key())
+        .collection_mint(ctx.accounts.collection_mint.key())
+        .metadata(ctx.accounts.new_metadata.key())
+        .build(VerificationArgs::CreatorV1 {})
+        .unwrap()
+        .instruction();
+
+    invoke_signed(
+        &verify_creator,
+        &[
+            ctx.accounts.first_creator.to_account_info(),
+            ctx.accounts.new_mint.to_account_info(),
+            ctx.accounts.collection_mint.to_account_info(),
+            ctx.accounts.collection_metadata.to_account_info(),
+            ctx.accounts.collection_master_edition.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            ctx.accounts.sysvar_instructions.to_account_info(),
         ],
         &[&[
-            DERUG_DATA_SEED,
-            ctx.accounts.derug_request.key().as_ref(),
-            AUTHORITY_SEED,
-            &[*ctx.bumps.get(&"pda_authority".to_string()).unwrap()],
+            DERUG,
+            ctx.accounts
+                .derug_request
+                .mint_config
+                .candy_machine_key
+                .as_ref(),
+            &[*ctx.bumps.get(&"first_creator".to_string()).unwrap()],
         ]],
     )?;
 
@@ -343,47 +393,6 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         new_nft_metadata: ctx.accounts.new_metadata.key(),
         old_nft_metadata: ctx.accounts.old_metadata.key()
     });
-
-    let mut verify_creator_data: Vec<u8> = Vec::new();
-
-    verify_creator_data.extend_from_slice(&[7_u8]);
-
-    let accounts: Vec<AccountMeta> = vec![
-        AccountMeta {
-            is_signer: false,
-            is_writable: true,
-            pubkey: ctx.accounts.new_metadata.key(),
-        },
-        AccountMeta {
-            is_signer: true,
-            is_writable: false,
-            pubkey: ctx.accounts.first_creator.key(),
-        },
-    ];
-
-    let verify_creator_ix = Instruction {
-        accounts,
-        data: verify_creator_data,
-        program_id: ctx.accounts.metadata_program.key(),
-    };
-
-    invoke_signed(
-        &verify_creator_ix,
-        &[
-            ctx.accounts.new_metadata.to_account_info(),
-            ctx.accounts.first_creator.to_account_info(),
-        ],
-        &[&[
-            DERUG,
-            ctx.accounts
-                .derug_request
-                .mint_config
-                .candy_machine_key
-                .key()
-                .as_ref(),
-            &[*ctx.bumps.get(&"first_creator".to_string()).unwrap()],
-        ]],
-    )?;
 
     Ok(())
 }

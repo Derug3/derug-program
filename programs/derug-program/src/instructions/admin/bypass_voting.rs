@@ -1,4 +1,4 @@
-use crate::constants::{DERUG_DATA_SEED, PLATFORM_AUTHORITY};
+use crate::constants::DERUG_DATA_SEED;
 use crate::state::*;
 use anchor_lang::prelude::*;
 #[derive(Accounts)]

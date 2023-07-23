@@ -7,10 +7,7 @@ use crate::{
     },
 };
 use anchor_lang::{prelude::*, system_program::Transfer};
-use anchor_spl::token::{
-    initialize_account, initialize_mint, mint_to, InitializeAccount, InitializeMint, Mint, MintTo,
-    Token, TokenAccount,
-};
+use anchor_spl::token::{mint_to, Mint, MintTo, Token, TokenAccount};
 
 use mpl_token_metadata::{
     instruction::{create_master_edition_v3, create_metadata_accounts_v3},
