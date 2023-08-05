@@ -29,6 +29,7 @@ pub struct MintConfig {
     pub remint_duration: i64,
     pub seller_fee_bps: u16,
     pub whitelist_config: Option<WhitelistConfig>,
+    pub destination_ata: Option<Pubkey>,
 }
 
 #[derive(AnchorDeserialize, AnchorSerialize, Debug, Clone)]

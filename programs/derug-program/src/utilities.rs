@@ -123,3 +123,7 @@ pub fn create_master_edition_ix(
         Some(0),
     )
 }
+
+pub fn extract_name(name: &String) -> String {
+    name.splitn(2, '#').nth(1).unwrap().to_string()
+}

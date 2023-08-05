@@ -18,12 +18,14 @@ pub struct InitPrivateMint<'info> {
     pub payer: Signer<'info>,
 }
 
-pub fn init_private_mint(ctx: Context<InitPrivateMint>) -> Result<()> {
+pub fn init_private_mint(ctx: Context<InitPrivateMint>, total_supply: u32) -> Result<()> {
     let derug_data = &mut ctx.accounts.derug_data;
     let derug_request = &mut ctx.accounts.derug_request;
 
     derug_data.derug_status = DerugStatus::Reminting;
     derug_request.request_status = RequestStatus::Reminting;
+
+    derug_data.total_supply = total_supply;
 
     derug_request.mint_config.remint_duration = derug_request
         .mint_config

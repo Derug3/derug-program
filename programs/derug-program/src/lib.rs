@@ -56,10 +56,8 @@ pub mod derug_program {
 
     pub fn remint_nft<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, RemintNft<'info>>,
-        new_name: String,
-        new_uri: String,
     ) -> Result<()> {
-        instructions::remint_nft(ctx, new_name, new_uri)
+        instructions::remint_nft(ctx)
     }
 
     pub fn close_program_account<'a, 'b, 'c, 'info>(
@@ -79,11 +77,15 @@ pub mod derug_program {
         instructions::freeze_nft(ctx)
     }
 
-    pub fn init_private_mint(ctx: Context<InitPrivateMint>) -> Result<()> {
-        instructions::init_private_mint(ctx)
+    pub fn init_private_mint(ctx: Context<InitPrivateMint>, total_supply: u32) -> Result<()> {
+        instructions::init_private_mint(ctx, total_supply)
     }
 
     pub fn bypass_voting(ctx: Context<BypassVoting>) -> Result<()> {
         instructions::bypass_voting(ctx)
+    }
+
+    pub fn init_public_mint(ctx: Context<InitPublicMint>) -> Result<()> {
+        instructions::init_public_mint(ctx)
     }
 }

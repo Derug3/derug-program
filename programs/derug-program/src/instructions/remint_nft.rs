@@ -5,6 +5,7 @@ use crate::{
         derug_data::DerugData,
         derug_request::{DerugRequest, NftRemintedEvent, RemintProof},
     },
+    utilities::extract_name,
 };
 use anchor_lang::{prelude::*, system_program::transfer};
 use anchor_spl::{
@@ -105,10 +106,8 @@ pub struct RemintNft<'info> {
 
 pub fn remint_nft<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, RemintNft<'info>>,
-    new_name: String,
-    new_uri: String,
 ) -> Result<()> {
-    let _derug_request = &ctx.accounts.derug_request;
+    let derug_request = &ctx.accounts.derug_request;
     require!(
         ctx.accounts.old_collection.key() == ctx.accounts.derug_data.collection,
         DerugError::WrongCollection
@@ -253,9 +252,13 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         is_mutable: true,
         primary_sale_happened: false,
         uses: None,
-        uri: new_uri,
+        uri: old_metadata_account.data.uri,
         collection_details: None,
-        name: new_name,
+        name: format!(
+            "${} #${}",
+            derug_request.new_name,
+            extract_name(&old_metadata_account.data.name)
+        ),
         symbol: ctx.accounts.derug_request.new_symbol.clone(),
         rule_set: Some(ctx.accounts.metaplex_foundation_ruleset.key()),
         seller_fee_basis_points: ctx.accounts.derug_request.mint_config.seller_fee_bps,
