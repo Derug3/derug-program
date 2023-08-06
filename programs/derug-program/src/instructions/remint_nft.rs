@@ -1,11 +1,10 @@
 use crate::{
-    constants::{AUTHORITY_SEED, DERUG, DERUG_DATA_SEED},
+    constants::{DERUG, DERUG_DATA_SEED},
     errors::DerugError,
     state::{
         derug_data::DerugData,
-        derug_request::{DerugRequest, NftRemintedEvent, RemintProof},
+        derug_request::{DerugRequest, NftRemintedEvent},
     },
-    utilities::extract_name,
 };
 use anchor_lang::{prelude::*, system_program::transfer};
 use anchor_spl::{
@@ -19,7 +18,6 @@ use mpl_token_metadata::{
     },
     state::AssetData,
 };
-use std::mem::size_of;
 
 use mpl_token_metadata::{
     state::{Collection, Creator, Metadata, TokenMetadataAccount, TokenStandard, EDITION, PREFIX},
@@ -35,25 +33,23 @@ pub struct RemintNft<'info> {
     pub derug_data: Box<Account<'info, DerugData>>,
     #[account(mut)]
     pub authority: Signer<'info>,
-    #[account()]
-    pub new_collection: Box<Account<'info, Mint>>,
-    ///CHECK:address checekd
-    #[account(address=derug_request.derugger)]
-    pub derugger: UncheckedAccount<'info>,
-    #[account(init,payer=payer,seeds=[DERUG,old_mint.key().as_ref()],bump,space=8+size_of::<RemintProof>())]
-    pub remint_proof: Box<Account<'info, RemintProof>>,
-    #[account()]
+    // #[account(init,payer=payer,seeds=[DERUG,old_mint.key().as_ref()],bump,space=8+size_of::<RemintProof>())]
+    // pub remint_proof: Box<Account<'info, RemintProof>>,
+    #[account(mut)]
     ///CHECK
     pub old_collection: UncheckedAccount<'info>,
     #[account(mut)]
+    ///CHECK
+    pub old_collection_metadata: UncheckedAccount<'info>,
+    #[account(mut)]
     pub old_mint: Box<Account<'info, Mint>>,
-    #[account()]
+    #[account(mut)]
     ///CHECK:initialized by mpl-program
-    pub new_mint: UncheckedAccount<'info>,
+    pub new_mint: Signer<'info>,
     //TODO: Require
     #[account(mut)]
     pub old_token: Box<Account<'info, TokenAccount>>,
-    #[account()]
+    #[account(mut)]
     ///CHECK:initialized by mpl-program
     pub new_token: UncheckedAccount<'info>,
     #[account(mut, seeds=[PREFIX.as_ref(), METADATA_PROGRAM_ID.as_ref(), old_mint.key().as_ref()], bump,seeds::program = METADATA_PROGRAM_ID)]
@@ -71,12 +67,9 @@ pub struct RemintNft<'info> {
     ///CHECK
     #[account(mut, seeds=[PREFIX.as_ref(), METADATA_PROGRAM_ID.as_ref(), new_mint.key().as_ref(), EDITION.as_ref()],bump, seeds::program = METADATA_PROGRAM_ID)]
     pub new_edition: UncheckedAccount<'info>,
-    #[account(seeds=[DERUG_DATA_SEED,derug_request.key().as_ref(),AUTHORITY_SEED],bump)]
-    ///CHECK
-    pub pda_authority: UncheckedAccount<'info>,
-    #[account()]
+    #[account(mut)]
     pub collection_mint: Account<'info, Mint>,
-    #[account()]
+    #[account(mut)]
     ///CHECK
     pub collection_metadata: UncheckedAccount<'info>,
     ///CHECK
@@ -93,14 +86,16 @@ pub struct RemintNft<'info> {
     #[account()]
     ///CHECK
     pub metaplex_authorization_rules: UncheckedAccount<'info>,
+    #[account(mut)]
+    ///CHECK:check by mpx
+    pub token_record: UncheckedAccount<'info>,
     ///CHECK
     #[account(address = METADATA_PROGRAM_ID)]
     pub metadata_program: UncheckedAccount<'info>,
-    pub rent: Sysvar<'info, Rent>,
     pub token_program: Program<'info, Token>,
     ///CHECK:checked by mpl_token_metadata
     pub sysvar_instructions: UncheckedAccount<'info>,
-    ///CHECK:checked by mpl_token_metadata
+    // ///CHECK:checked by mpl_token_metadata
     pub spl_ata_program: Program<'info, AssociatedToken>,
 }
 
@@ -112,13 +107,6 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         ctx.accounts.old_collection.key() == ctx.accounts.derug_data.collection,
         DerugError::WrongCollection
     );
-
-    let remint_proof = &mut ctx.accounts.remint_proof;
-
-    remint_proof.derug_data = ctx.accounts.derug_data.key();
-    remint_proof.new_mint = ctx.accounts.new_mint.key();
-    remint_proof.reminter = ctx.accounts.payer.key();
-    remint_proof.old_mint = ctx.accounts.old_mint.key();
 
     //TODO:comment in
 
@@ -205,9 +193,7 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         .unwrap();
 
     let old_collection = if *ctx.accounts.old_collection.to_account_info().owner == spl_token::ID {
-        let old_collection = ctx.remaining_accounts.iter().next().unwrap();
-
-        Some(old_collection.key())
+        Some(ctx.accounts.old_collection.key())
     } else {
         None
     };
@@ -215,13 +201,12 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
     let mut burn_builder = BurnBuilder::new();
     burn_builder
         .authority(ctx.accounts.payer.key())
-        .collection_metadata(ctx.accounts.collection_metadata.key())
-        .master_edition(ctx.accounts.old_edition.key())
+        .edition(ctx.accounts.old_edition.key())
         .metadata(ctx.accounts.old_metadata.key())
         .mint(ctx.accounts.old_mint.key())
         .token(ctx.accounts.old_token.key());
     if old_collection.is_some() {
-        burn_builder.collection_metadata(ctx.accounts.collection_metadata.key());
+        burn_builder.collection_metadata(ctx.accounts.old_collection_metadata.key());
     }
 
     let burn_ix = burn_builder
@@ -233,7 +218,7 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         &burn_ix,
         &[
             ctx.accounts.payer.to_account_info(),
-            ctx.accounts.collection_metadata.to_account_info(),
+            ctx.accounts.old_collection_metadata.to_account_info(),
             ctx.accounts.old_metadata.to_account_info(),
             ctx.accounts.old_edition.to_account_info(),
             ctx.accounts.old_mint.to_account_info(),
@@ -254,14 +239,10 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         uses: None,
         uri: old_metadata_account.data.uri,
         collection_details: None,
-        name: format!(
-            "${} #${}",
-            derug_request.new_name,
-            extract_name(&old_metadata_account.data.name)
-        ),
+        name: "Test #2456".to_string(),
         symbol: ctx.accounts.derug_request.new_symbol.clone(),
         rule_set: Some(ctx.accounts.metaplex_foundation_ruleset.key()),
-        seller_fee_basis_points: ctx.accounts.derug_request.mint_config.seller_fee_bps,
+        seller_fee_basis_points: ctx.accounts.derug_request.mint_config.seller_fee_bps.into(),
         token_standard: TokenStandard::ProgrammableNonFungible,
         creators: Some(creators_vec),
     };
@@ -278,7 +259,7 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         .build(CreateArgs::V1 {
             asset_data: asset,
             decimals: Some(0),
-            print_supply: None,
+            print_supply: Some(mpl_token_metadata::state::PrintSupply::Zero),
         })
         .unwrap()
         .instruction();
@@ -305,8 +286,11 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         .master_edition(ctx.accounts.new_edition.key())
         .metadata(ctx.accounts.new_metadata.key())
         .mint(ctx.accounts.new_mint.key())
+        .token_record(ctx.accounts.token_record.key())
         .payer(ctx.accounts.payer.key())
         .spl_token_program(ctx.accounts.token_program.key())
+        .token(ctx.accounts.new_token.key())
+        .spl_ata_program(ctx.accounts.spl_ata_program.key())
         .token(ctx.accounts.new_token.key())
         .token_owner(ctx.accounts.payer.key())
         .build(MintArgs::V1 {
@@ -325,11 +309,13 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
             ctx.accounts.new_edition.to_account_info(),
             ctx.accounts.new_mint.to_account_info(),
             ctx.accounts.authority.to_account_info(),
+            ctx.accounts.token_record.to_account_info(),
             ctx.accounts.payer.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
             ctx.accounts.sysvar_instructions.to_account_info(),
             ctx.accounts.token_program.to_account_info(),
             ctx.accounts.metaplex_authorization_rules.to_account_info(),
+            ctx.accounts.metaplex_foundation_ruleset.to_account_info(),
             ctx.accounts.spl_ata_program.to_account_info(),
         ],
     )?;
@@ -348,7 +334,7 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         &verify_collection_ix,
         &[
             ctx.accounts.authority.to_account_info(),
-            ctx.accounts.new_mint.to_account_info(),
+            ctx.accounts.new_metadata.to_account_info(),
             ctx.accounts.collection_mint.to_account_info(),
             ctx.accounts.collection_metadata.to_account_info(),
             ctx.accounts.collection_master_edition.to_account_info(),
@@ -362,6 +348,7 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         .collection_master_edition(ctx.accounts.collection_master_edition.key())
         .collection_metadata(ctx.accounts.collection_metadata.key())
         .collection_mint(ctx.accounts.collection_mint.key())
+        .sysvar_instructions(ctx.accounts.sysvar_instructions.key())
         .metadata(ctx.accounts.new_metadata.key())
         .build(VerificationArgs::CreatorV1 {})
         .unwrap()
@@ -374,6 +361,7 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
             ctx.accounts.new_mint.to_account_info(),
             ctx.accounts.collection_mint.to_account_info(),
             ctx.accounts.collection_metadata.to_account_info(),
+            ctx.accounts.new_metadata.to_account_info(),
             ctx.accounts.collection_master_edition.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
             ctx.accounts.sysvar_instructions.to_account_info(),

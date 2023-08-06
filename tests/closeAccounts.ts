@@ -22,14 +22,10 @@ async function closeAccounts() {
     new AnchorProvider(connection, new NodeWallet(payer), {})
   );
 
-  const voteRecords = await program.account.voteRecord.all();
-
-  const chunkedVoteRecords = chunk(voteRecords, 25);
-
   const [derugData] = PublicKey.findProgramAddressSync(
     [
       Buffer.from("derug-data"),
-      new PublicKey("9P2aidVgTfSfKwMJwEUP7rTSTgYPmCj9eAHN1yccUL3U").toBuffer(),
+      new PublicKey("DokxHuiYjAcnWzRzq2BqE3i8CeHMCpZJbpTdDNHZ99ei").toBuffer(),
     ],
     program.programId
   );
@@ -38,33 +34,17 @@ async function closeAccounts() {
     [
       Buffer.from("derug-data"),
       derugData.toBuffer(),
-      new PublicKey("DRG3YRmurqpWQ1jEjK8DiWMuqPX9yL32LXLbuRdoiQwt").toBuffer(),
+      new PublicKey("A6DHb3s8VKSKV3cC58xYzLooyVsLuKCrWwQEe2ZdbEZg").toBuffer(),
     ],
     program.programId
   );
-
-  const [remintConfig] = PublicKey.findProgramAddressSync(
-    [Buffer.from("remint-config"), derugData.toBuffer()],
-    program.programId
-  );
-
-  // for (const cvr of chunkedVoteRecords) {
-  // const remainingAccounts: AccountMeta[] = cvr.map((vr) => {
-  //   return {
-  //     isSigner: false,
-  //     isWritable: true,
-  //     pubkey: vr.publicKey,
-  //   };
-  // });
 
   const ix = program.instruction.closeProgramAccount({
     accounts: {
       derugData,
       derugRequest,
       payer: payer.publicKey,
-      remintConfig,
     },
-    // remainingAccounts: remainingAccounts,
   });
 
   try {

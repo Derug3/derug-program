@@ -24,8 +24,8 @@ pub mod derug_program {
         ctx: Context<CreateOrUpdateDerugRequest>,
         new_name: String,
         new_symbol: String,
-        creators: Vec<DeruggerCreator>,
         mint_config: MintConfig,
+        creators: Vec<DeruggerCreator>,
     ) -> Result<()> {
         instructions::create_or_update_derug_request(
             ctx,

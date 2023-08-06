@@ -10,7 +10,6 @@ use crate::{
 };
 use anchor_lang::prelude::*;
 use anchor_lang::system_program::{transfer, Transfer};
-use anchor_spl::token::Mint;
 
 #[derive(Accounts)]
 pub struct CreateOrUpdateDerugRequest<'info> {
@@ -49,7 +48,7 @@ pub fn create_or_update_derug_request(
 
     derug_data.total_suggestion_count = derug_data.total_suggestion_count.checked_add(1).unwrap();
 
-    derug_request.request_status = RequestStatus::Voting;
+    derug_request.request_status = RequestStatus::Initialized;
 
     let new_len = derug_data
         .to_account_info()
@@ -75,17 +74,6 @@ pub fn create_or_update_derug_request(
         vote_count: 0,
         winning: false,
     });
-
-    let remaining_accounts = &mut ctx.remaining_accounts.iter();
-
-    let mint_currency_info = remaining_accounts.next().unwrap();
-
-    require!(
-        mint_currency_info.key() == mint_config.mint_currency,
-        DerugError::InvalidMintCurrency
-    );
-
-    Account::<Mint>::try_from(mint_currency_info).expect("Invalid mint!");
 
     derug_request.mint_config = mint_config;
 

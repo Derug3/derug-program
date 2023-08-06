@@ -1,13 +1,11 @@
 use anchor_lang::prelude::*;
 
-use itertools::Itertools;
-
 use crate::{
     constants::DERUG_DATA_SEED,
     errors::DerugError,
     state::{
         derug_data::{DerugData, DerugStatus},
-        derug_request::{DerugRequest, RequestStatus},
+        derug_request::DerugRequest,
     },
 };
 
@@ -43,31 +41,8 @@ pub fn claim_victory<'a, 'b, 'c, 'info>(
         .winning = true;
 
     derug_data.winning_request = Some(derug_request.key());
-    let active_requests = derug_data
-        .active_requests
-        .iter()
-        .filter(|request| request.vote_count > 0 && request.winning == true)
-        .collect_vec();
-
-    let winner = active_requests.get(0).unwrap();
-
-    require!(
-        winner.request == derug_request.key(),
-        DerugError::InvalidWinningRequest
-    );
-
-    let multiple_winners = derug_data
-        .active_requests
-        .iter()
-        .filter(|request| request.vote_count == winner.vote_count)
-        .collect_vec();
-
-    if multiple_winners.len() > 1 {
-        panic!("There are multiple winners");
-    }
 
     derug_data.derug_status = DerugStatus::Succeeded;
-    derug_request.request_status = RequestStatus::Succeeded;
 
     Ok(())
 }

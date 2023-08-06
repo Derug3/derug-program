@@ -37,13 +37,8 @@ async function closeAccounts() {
     [
       Buffer.from("derug-data"),
       derugData.toBuffer(),
-      new PublicKey("6x1bmYkoPFs2oWjoRg7v4NAW4pzjxid2DVooyJmC4emH").toBuffer(),
+      new PublicKey("KQ1jcFYvnH9DNUzBfVbquRohP9uZ6C7DVJJDyqiGB4P").toBuffer(),
     ],
-    program.programId
-  );
-
-  const [remintConfig] = PublicKey.findProgramAddressSync(
-    [Buffer.from("remint-config"), derugData.toBuffer()],
     program.programId
   );
 
@@ -51,7 +46,6 @@ async function closeAccounts() {
     accounts: {
       derugRequest,
       payer: payer.publicKey,
-      // remintConfig,
     },
   });
 

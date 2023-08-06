@@ -35,6 +35,7 @@ pub fn init_private_mint(ctx: Context<InitPrivateMint>, total_supply: u32) -> Re
 
     emit!(PrivateMintStarted {
         derug_data: ctx.accounts.derug_data.key(),
+        derug_request: ctx.accounts.derug_request.key()
     });
 
     Ok(())

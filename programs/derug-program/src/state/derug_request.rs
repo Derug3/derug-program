@@ -120,4 +120,5 @@ pub struct NftRemintedEvent {
 #[event]
 pub struct PrivateMintStarted {
     pub derug_data: Pubkey,
+    pub derug_request: Pubkey,
 }
