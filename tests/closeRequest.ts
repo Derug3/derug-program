@@ -27,7 +27,7 @@ async function closeAccounts() {
   const [derugData] = PublicKey.findProgramAddressSync(
     [
       Buffer.from("derug-data"),
-      new PublicKey("9P2aidVgTfSfKwMJwEUP7rTSTgYPmCj9eAHN1yccUL3U").toBuffer(),
+      new PublicKey("DokxHuiYjAcnWzRzq2BqE3i8CeHMCpZJbpTdDNHZ99ei").toBuffer(),
     ],
     program.programId
   );
@@ -37,7 +37,7 @@ async function closeAccounts() {
     [
       Buffer.from("derug-data"),
       derugData.toBuffer(),
-      new PublicKey("KQ1jcFYvnH9DNUzBfVbquRohP9uZ6C7DVJJDyqiGB4P").toBuffer(),
+      new PublicKey("A6DHb3s8VKSKV3cC58xYzLooyVsLuKCrWwQEe2ZdbEZg").toBuffer(),
     ],
     program.programId
   );

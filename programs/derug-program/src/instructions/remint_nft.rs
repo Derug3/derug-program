@@ -1,10 +1,11 @@
 use crate::{
-    constants::{DERUG, DERUG_DATA_SEED},
+    constants::DERUG_DATA_SEED,
     errors::DerugError,
     state::{
         derug_data::DerugData,
         derug_request::{DerugRequest, NftRemintedEvent},
     },
+    utilities::extract_name,
 };
 use anchor_lang::{prelude::*, system_program::transfer};
 use anchor_spl::{
@@ -23,7 +24,7 @@ use mpl_token_metadata::{
     state::{Collection, Creator, Metadata, TokenMetadataAccount, TokenStandard, EDITION, PREFIX},
     ID as METADATA_PROGRAM_ID,
 };
-use solana_program::program::{invoke, invoke_signed};
+use solana_program::program::invoke;
 
 #[derive(Accounts)]
 pub struct RemintNft<'info> {
@@ -58,9 +59,6 @@ pub struct RemintNft<'info> {
     ///CHECK
     #[account(mut, seeds=[PREFIX.as_ref(), METADATA_PROGRAM_ID.as_ref(), new_mint.key().as_ref()], bump,seeds::program = METADATA_PROGRAM_ID)]
     pub new_metadata: UncheckedAccount<'info>,
-    ///CHECK
-    #[account(seeds=[DERUG,derug_request.mint_config.candy_machine_key.as_ref()],bump)]
-    pub first_creator: UncheckedAccount<'info>,
     ///CHECK
     #[account(mut, seeds=[PREFIX.as_ref(), METADATA_PROGRAM_ID.as_ref(), old_mint.key().as_ref(), EDITION.as_ref()],bump, seeds::program = METADATA_PROGRAM_ID)]
     pub old_edition: UncheckedAccount<'info>,
@@ -107,6 +105,13 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         ctx.accounts.old_collection.key() == ctx.accounts.derug_data.collection,
         DerugError::WrongCollection
     );
+
+    // let remint_proof = &mut ctx.accounts.remint_proof;
+
+    // remint_proof.derug_data = ctx.accounts.derug_data.key();
+    // remint_proof.new_mint = ctx.accounts.new_mint.key();
+    // remint_proof.old_mint = ctx.accounts.old_mint.key();
+    // remint_proof.reminter = ctx.accounts.payer.key();
 
     //TODO:comment in
 
@@ -168,7 +173,7 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
     creators_vec.insert(
         0,
         Creator {
-            address: ctx.accounts.first_creator.key(),
+            address: ctx.accounts.authority.key(),
             verified: false,
             share: 0,
         },
@@ -182,7 +187,7 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
                 to: ctx.accounts.fee_wallet.to_account_info(),
             },
         ),
-        9000000,
+        90000000,
     )?;
 
     ctx.accounts.derug_data.total_reminted = ctx
@@ -239,7 +244,17 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         uses: None,
         uri: old_metadata_account.data.uri,
         collection_details: None,
-        name: "Test #2456".to_string(),
+        name: format!(
+            "{} #{}",
+            derug_request.new_name,
+            extract_name(
+                &old_metadata_account
+                    .data
+                    .name
+                    .trim_end_matches("\0")
+                    .to_string()
+            )
+        ),
         symbol: ctx.accounts.derug_request.new_symbol.clone(),
         rule_set: Some(ctx.accounts.metaplex_foundation_ruleset.key()),
         seller_fee_basis_points: ctx.accounts.derug_request.mint_config.seller_fee_bps.into(),
@@ -344,7 +359,7 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
     )?;
 
     let verify_creator = VerifyBuilder::new()
-        .authority(ctx.accounts.first_creator.key())
+        .authority(ctx.accounts.authority.key())
         .collection_master_edition(ctx.accounts.collection_master_edition.key())
         .collection_metadata(ctx.accounts.collection_metadata.key())
         .collection_mint(ctx.accounts.collection_mint.key())
@@ -354,10 +369,10 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         .unwrap()
         .instruction();
 
-    invoke_signed(
+    invoke(
         &verify_creator,
         &[
-            ctx.accounts.first_creator.to_account_info(),
+            ctx.accounts.authority.to_account_info(),
             ctx.accounts.new_mint.to_account_info(),
             ctx.accounts.collection_mint.to_account_info(),
             ctx.accounts.collection_metadata.to_account_info(),
@@ -366,15 +381,6 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
             ctx.accounts.system_program.to_account_info(),
             ctx.accounts.sysvar_instructions.to_account_info(),
         ],
-        &[&[
-            DERUG,
-            ctx.accounts
-                .derug_request
-                .mint_config
-                .candy_machine_key
-                .as_ref(),
-            &[*ctx.bumps.get(&"first_creator".to_string()).unwrap()],
-        ]],
     )?;
 
     emit!(NftRemintedEvent {
