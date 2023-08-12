@@ -22,7 +22,7 @@ pub fn bypass_voting(ctx: Context<BypassVoting>) -> Result<()> {
 
     derug_request.vote_count = total_supply as u32;
 
-    derug_request.request_status = RequestStatus::Succeeded;
+    derug_request.request_status = RequestStatus::UploadingMetadata;
 
     derug_data.derug_status = DerugStatus::Succeeded;
 

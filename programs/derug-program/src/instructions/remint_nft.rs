@@ -8,10 +8,7 @@ use crate::{
     utilities::extract_name,
 };
 use anchor_lang::{prelude::*, system_program::transfer};
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token::{Mint, Token, TokenAccount},
-};
+use anchor_spl::token::{Mint, Token, TokenAccount};
 use mpl_token_metadata::{
     instruction::{
         builders::{BurnBuilder, CreateBuilder, MintBuilder, VerifyBuilder},
@@ -74,7 +71,11 @@ pub struct RemintNft<'info> {
     pub collection_master_edition: UncheckedAccount<'info>,
     #[account(mut)]
     pub payer: Signer<'info>,
-    pub system_program: Program<'info, System>,
+    ///CHECK:checked by mpl_token_metadata
+    pub system_program: UncheckedAccount<'info>,
+    #[account(mut)]
+    ///CHECK
+    pub old_token_record: UncheckedAccount<'info>,
     ///CHECK
     #[account(mut, address = "DRG3YRmurqpWQ1jEjK8DiWMuqPX9yL32LXLbuRdoiQwt".parse::<Pubkey>().unwrap())]
     pub fee_wallet: AccountInfo<'info>,
@@ -93,8 +94,8 @@ pub struct RemintNft<'info> {
     pub token_program: Program<'info, Token>,
     ///CHECK:checked by mpl_token_metadata
     pub sysvar_instructions: UncheckedAccount<'info>,
-    // ///CHECK:checked by mpl_token_metadata
-    pub spl_ata_program: Program<'info, AssociatedToken>,
+    ///CHECK:checked by mpl_token_metadata
+    pub spl_ata_program: UncheckedAccount<'info>,
 }
 
 pub fn remint_nft<'a, 'b, 'c, 'info>(
@@ -214,6 +215,12 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
         burn_builder.collection_metadata(ctx.accounts.old_collection_metadata.key());
     }
 
+    if let Some(token_standard) = old_metadata_account.token_standard {
+        if token_standard == TokenStandard::ProgrammableNonFungible {
+            burn_builder.token_record(ctx.accounts.old_token_record.key());
+        }
+    }
+
     let burn_ix = burn_builder
         .build(BurnArgs::V1 { amount: 1 })
         .unwrap()
@@ -229,6 +236,7 @@ pub fn remint_nft<'a, 'b, 'c, 'info>(
             ctx.accounts.old_mint.to_account_info(),
             ctx.accounts.old_token.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
+            ctx.accounts.old_token_record.to_account_info(),
             ctx.accounts.sysvar_instructions.to_account_info(),
             ctx.accounts.token_program.to_account_info(),
         ],
